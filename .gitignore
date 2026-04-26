@@ -1,0 +1,38 @@
+# CMake/build outputs
+build/
+*/build/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+_deps/
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Python/cache
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Generated runtime artifacts
+*.wav
+*.codes.txt
+*.tokens
+*.f32
+
+# Local/editor files
+.DS_Store
+*.swp
+*.swo
