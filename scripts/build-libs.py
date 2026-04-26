@@ -42,6 +42,7 @@ def main() -> None:
         "-B",
         str(args.build_dir),
         "-DCMAKE_BUILD_TYPE=" + args.config,
+        "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
     ]
     if args.generator:
         configure.extend(["-G", args.generator])
