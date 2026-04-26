@@ -22,8 +22,10 @@ def host_name() -> str:
 
 def copy_matches(src: Path, dst: Path, patterns: list[str]) -> list[str]:
     copied: list[str] = []
+    if not src.exists():
+        return copied
     for pattern in patterns:
-        for path in sorted(src.glob(pattern)):
+        for path in sorted(src.rglob(pattern)):
             if path.is_file() or path.is_symlink():
                 out = dst / path.name
                 shutil.copy2(path, out, follow_symlinks=True)
@@ -85,6 +87,8 @@ def main() -> None:
         "soxr*.lib",
         "soxr*.dll",
     ])
+    if not copied:
+        raise SystemExit(f"no native libraries found under {args.build_dir}")
 
     metadata = {
         "name": name,
@@ -96,7 +100,7 @@ def main() -> None:
     (staging / "metadata.json").write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
 
     if args.archive:
-        archive = args.out_dir / (name + (".zip" if platform.system().lower() == "windows" else ".tar.gz"))
+        archive = args.out_dir / (name + (".zip" if args.platform.startswith("windows-") else ".tar.gz"))
         if archive.exists():
             archive.unlink()
         make_archive(staging, archive)
