@@ -28,8 +28,12 @@ libraries are downloaded.
 Download prebuilt native libraries from a GitHub release:
 
 ```bash
-uv run python scripts/download-libs.py --repo thewh1teagle/chirp --backend cpu
+uv run python scripts/download-libs.py --tag chirp-c-v0.1.0 --backend cpu
 ```
+
+Native library releases use `chirp-c-v*` tags. The release workflow packages
+Linux, macOS, and Windows `chirp-c` archives and uploads them as release
+assets.
 
 Run checks:
 

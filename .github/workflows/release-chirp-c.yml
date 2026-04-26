@@ -1,10 +1,10 @@
-name: build chirp-c
+name: release chirp-c
 
 on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - "chirp-c-v*"
 
 jobs:
   build:
@@ -52,7 +52,7 @@ jobs:
           if-no-files-found: error
 
       - name: Upload release asset
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/chirp-c-v')
         uses: softprops/action-gh-release@v2
         with:
           files: dist/chirp-c-${{ matrix.platform }}-cpu.${{ matrix.archive_ext }}

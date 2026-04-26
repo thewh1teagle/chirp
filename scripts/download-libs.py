@@ -47,13 +47,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Download prebuilt chirp-c libraries from GitHub releases")
     parser.add_argument("--repo", default="thewh1teagle/chirp", help="GitHub repo owner/name")
     parser.add_argument("--version", default="latest", help="release tag or latest")
+    parser.add_argument("--tag", help="release tag; overrides --version")
     parser.add_argument("--backend", default="cpu")
     parser.add_argument("--platform", default=host_name())
     parser.add_argument("--out-dir", type=Path, default=ROOT / "runner" / "third_party" / "chirp-c")
     args = parser.parse_args()
 
     stem = f"chirp-c-{args.platform}-{args.backend}"
-    api = f"https://api.github.com/repos/{args.repo}/releases/latest" if args.version == "latest" else f"https://api.github.com/repos/{args.repo}/releases/tags/{args.version}"
+    version = args.tag or args.version
+    api = f"https://api.github.com/repos/{args.repo}/releases/latest" if version == "latest" else f"https://api.github.com/repos/{args.repo}/releases/tags/{version}"
     release = github_json(api)
     assets = release.get("assets", [])
     asset = next((a for a in assets if a.get("name", "").startswith(stem + ".tar.gz") or a.get("name", "").startswith(stem + ".zip")), None)
