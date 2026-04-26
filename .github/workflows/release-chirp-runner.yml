@@ -1,0 +1,124 @@
+name: release chirp-runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag (for example: chirp-runner-v0.1.0)"
+        required: true
+        type: string
+      chirp_c_tag:
+        description: "chirp-c release tag to link against"
+        required: true
+        default: "chirp-c-v0.1.0"
+        type: string
+  push:
+    tags:
+      - "chirp-runner-v*"
+
+permissions:
+  contents: write
+
+env:
+  VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
+  CHIRP_C_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.chirp_c_tag || 'chirp-c-v0.1.0' }}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: chirp-runner ${{ env.VERSION }}
+          body: |
+            chirp-runner built against chirp-c `${{ env.CHIRP_C_TAG }}`.
+          generate_release_notes: true
+
+  build-and-upload:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-22.04
+            platform: linux-x64
+            goos: linux
+            goarch: amd64
+            binary: chirp
+            archive_ext: tar.gz
+          - runner: macos-14
+            platform: darwin-arm64
+            goos: darwin
+            goarch: arm64
+            binary: chirp
+            archive_ext: tar.gz
+          - runner: windows-latest
+            platform: windows-x64
+            goos: windows
+            goarch: amd64
+            binary: chirp.exe
+            archive_ext: zip
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: runner/go.mod
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install cgo toolchain (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc
+
+      - name: Add MinGW to PATH
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: echo "$env:RUNNER_TEMP\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - name: Download chirp-c libraries
+        shell: bash
+        run: |
+          uv run python scripts/download-libs.py \
+            --tag "${CHIRP_C_TAG}" \
+            --platform "${{ matrix.platform }}" \
+            --backend cpu
+
+      - name: Build chirp runner
+        shell: bash
+        working-directory: runner
+        run: |
+          CGO_ENABLED=1 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+          go build \
+            -o "../dist/chirp-runner-${{ matrix.platform }}/${{ matrix.binary }}" \
+            -ldflags "-X main.version=${VERSION} -X main.commit=${GITHUB_SHA::8}" \
+            ./cmd/chirp
+
+      - name: Package chirp runner
+        shell: bash
+        run: |
+          uv run python scripts/package-runner.py \
+            --binary "dist/chirp-runner-${{ matrix.platform }}/${{ matrix.binary }}" \
+            --out "dist/chirp-runner-${{ matrix.platform }}.${{ matrix.archive_ext }}" \
+            --platform "${{ matrix.platform }}" \
+            --version "${VERSION}" \
+            --chirp-c-tag "${CHIRP_C_TAG}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chirp-runner-${{ matrix.platform }}
+          path: dist/chirp-runner-${{ matrix.platform }}.${{ matrix.archive_ext }}
+          if-no-files-found: error
+
+      - name: Upload release asset
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$env:VERSION" "dist/chirp-runner-${{ matrix.platform }}.${{ matrix.archive_ext }}" --clobber

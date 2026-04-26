@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import shutil
+import tarfile
+import tempfile
+import zipfile
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def package(binary: Path, out: Path, platform: str, version: str, chirp_c_tag: str) -> None:
+    if not binary.exists():
+        raise FileNotFoundError(binary)
+
+    with tempfile.TemporaryDirectory(prefix="chirp-runner-package-") as td:
+        stage = Path(td) / out.stem.removesuffix(".tar")
+        stage.mkdir(parents=True)
+
+        target_name = "chirp.exe" if platform.startswith("windows-") else "chirp"
+        target = stage / target_name
+        shutil.copy2(binary, target)
+        target.chmod(0o755)
+
+        (stage / "metadata.json").write_text(
+            json.dumps(
+                {
+                    "component": "chirp-runner",
+                    "version": version,
+                    "platform": platform,
+                    "chirp_c_tag": chirp_c_tag,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n"
+        )
+
+        out.parent.mkdir(parents=True, exist_ok=True)
+        if out.suffix == ".zip":
+            with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                for item in sorted(stage.iterdir()):
+                    zf.write(item, arcname=f"{stage.name}/{item.name}")
+        else:
+            with tarfile.open(out, "w:gz") as tf:
+                for item in sorted(stage.iterdir()):
+                    tf.add(item, arcname=f"{stage.name}/{item.name}")
+
+    print(f"packaged {out} ({out.stat().st_size // 1024} KB)")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Package a chirp runner release archive")
+    parser.add_argument("--binary", type=Path, required=True)
+    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument("--platform", required=True)
+    parser.add_argument("--version", required=True)
+    parser.add_argument("--chirp-c-tag", required=True)
+    args = parser.parse_args()
+    package(args.binary, args.out, args.platform, args.version, args.chirp_c_tag)
+
+
+if __name__ == "__main__":
+    main()
