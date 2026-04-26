@@ -6,6 +6,9 @@ on:
     tags:
       - "chirp-c-v*"
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: chirp-c ${{ matrix.platform }}
