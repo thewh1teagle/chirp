@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import json
+import platform
+import shutil
+import tarfile
+import tempfile
+import urllib.request
+import zipfile
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def host_name() -> str:
+    system = platform.system().lower()
+    machine = platform.machine().lower()
+    machine = {"amd64": "x64", "x86_64": "x64", "aarch64": "arm64"}.get(machine, machine)
+    return f"{system}-{machine}"
+
+
+def github_json(url: str) -> dict:
+    req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req) as res:
+        return json.loads(res.read().decode("utf-8"))
+
+
+def download(url: str, dest: Path) -> None:
+    print(f"downloading {url}")
+    with urllib.request.urlopen(url) as res, dest.open("wb") as out:
+        shutil.copyfileobj(res, out)
+
+
+def extract(archive: Path, dest: Path) -> None:
+    if archive.suffix == ".zip":
+        with zipfile.ZipFile(archive) as zf:
+            zf.extractall(dest)
+        return
+    with tarfile.open(archive, "r:gz") as tf:
+        tf.extractall(dest)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Download prebuilt chirp-c libraries from GitHub releases")
+    parser.add_argument("--repo", default="thewh1teagle/chirp", help="GitHub repo owner/name")
+    parser.add_argument("--version", default="latest", help="release tag or latest")
+    parser.add_argument("--backend", default="cpu")
+    parser.add_argument("--platform", default=host_name())
+    parser.add_argument("--out-dir", type=Path, default=ROOT / "runner" / "third_party" / "chirp-c")
+    args = parser.parse_args()
+
+    stem = f"chirp-c-{args.platform}-{args.backend}"
+    api = f"https://api.github.com/repos/{args.repo}/releases/latest" if args.version == "latest" else f"https://api.github.com/repos/{args.repo}/releases/tags/{args.version}"
+    release = github_json(api)
+    assets = release.get("assets", [])
+    asset = next((a for a in assets if a.get("name", "").startswith(stem + ".tar.gz") or a.get("name", "").startswith(stem + ".zip")), None)
+    if not asset:
+        names = ", ".join(a.get("name", "") for a in assets)
+        raise SystemExit(f"asset not found for {stem}; available: {names}")
+
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        archive = tmp / asset["name"]
+        download(asset["browser_download_url"], archive)
+        extract(archive, tmp)
+        extracted = tmp / stem
+        if not extracted.exists():
+            raise SystemExit(f"archive did not contain {stem}")
+        if args.out_dir.exists():
+            shutil.rmtree(args.out_dir)
+        args.out_dir.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(extracted, args.out_dir)
+    print(args.out_dir)
+
+
+if __name__ == "__main__":
+    main()

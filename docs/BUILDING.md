@@ -3,22 +3,39 @@
 Build the native C/C++ runtime first:
 
 ```bash
-cmake -S chirp/chirp-c -B chirp/chirp-c/build
-cmake --build chirp/chirp-c/build -j
+cmake -S chirp-c -B chirp-c/build
+cmake --build chirp-c/build -j
+```
+
+Or use the packaging script:
+
+```bash
+uv run python scripts/build-libs.py --backend cpu
+uv run python scripts/package-libs.py --backend cpu --platform linux-arm64 --archive
 ```
 
 Build the Go runner:
 
 ```bash
-cd chirp/runner
+cd runner
 go build ./cmd/chirp
+```
+
+The Go runner links to local `chirp-c/build` during development. It also
+checks `runner/third_party/chirp-c` first, which is where prebuilt release
+libraries are downloaded.
+
+Download prebuilt native libraries from a GitHub release:
+
+```bash
+uv run python scripts/download-libs.py --repo thewh1teagle/chirp --backend cpu
 ```
 
 Run checks:
 
 ```bash
-uv run --project chirp/chirp-c/scripts python -c "import gguf, numpy, torch, safetensors, tqdm"
+uv run --project chirp-c/scripts python -c "import gguf, numpy, torch, safetensors, tqdm"
 
-cd chirp/runner
+cd runner
 go test ./...
 ```

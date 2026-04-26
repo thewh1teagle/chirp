@@ -11,6 +11,8 @@ Testing/
 _deps/
 
 # Build artifacts
+dist/
+third_party/
 *.o
 *.a
 *.so

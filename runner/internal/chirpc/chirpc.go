@@ -1,12 +1,13 @@
 package chirpc
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/../../../chirp-c/src
-#cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build -lchirp-runtime-lib
+#cgo CFLAGS: -I${SRCDIR}/../../third_party/chirp-c/include -I${SRCDIR}/../../../chirp-c/src
+#cgo LDFLAGS: -L${SRCDIR}/../../third_party/chirp-c/lib -L${SRCDIR}/../../../chirp-c/build -lchirp-runtime-lib
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src -lggml -lggml-cpu -lggml-base
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/kissfft-build -lkissfft-float
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/soxr-build/src -lsoxr
-#cgo linux LDFLAGS: -Wl,-rpath,${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src
+#cgo linux LDFLAGS: -Wl,-rpath,${SRCDIR}/../../third_party/chirp-c/lib -Wl,-rpath,${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src
+#cgo darwin LDFLAGS: -Wl,-rpath,${SRCDIR}/../../third_party/chirp-c/lib -Wl,-rpath,${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src
 #cgo LDFLAGS: -lstdc++ -lm
 #include "qwen3_tts.h"
 #include <stdlib.h>
