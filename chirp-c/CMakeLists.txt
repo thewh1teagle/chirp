@@ -105,5 +105,5 @@ target_include_directories(chirp-runtime-lib PUBLIC
     ${soxr_SOURCE_DIR}/src
 )
 
-add_executable(chirp-runtime src/main.cpp)
+add_executable(chirp-runtime examples/basic/main.cpp)
 target_link_libraries(chirp-runtime PRIVATE chirp-runtime-lib)
