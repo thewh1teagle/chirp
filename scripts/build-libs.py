@@ -19,12 +19,21 @@ def run(cmd: list[str], cwd: Path | None = None) -> None:
 def default_preset() -> str:
     system = platform.system().lower()
     machine = platform.machine().lower().replace("amd64", "x86_64")
-    return f"{system}-{machine}-cpu"
+    return f"{system}-{machine}-{default_backend()}"
+
+
+def default_backend() -> str:
+    system = platform.system()
+    if system == "Darwin":
+        return "metal"
+    if system in ("Linux", "Windows"):
+        return "vulkan"
+    return "cpu"
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build chirp-c native libraries")
-    parser.add_argument("--backend", default="cpu", choices=["cpu"], help="backend to build")
+    parser.add_argument("--backend", default=default_backend(), choices=["cpu", "metal", "vulkan"], help="backend to build")
     parser.add_argument("--build-dir", type=Path, default=ROOT / "chirp-c" / "build")
     parser.add_argument("--config", default="Release")
     parser.add_argument("--target", default="chirp-runtime-lib")
@@ -44,6 +53,10 @@ def main() -> None:
         "-DCMAKE_BUILD_TYPE=" + args.config,
         "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
     ]
+    if args.backend == "metal":
+        configure.extend(["-DGGML_METAL=ON", "-DGGML_METAL_EMBED_LIBRARY=ON"])
+    elif args.backend == "vulkan":
+        configure.append("-DGGML_VULKAN=ON")
     if args.generator:
         configure.extend(["-G", args.generator])
     run(configure)

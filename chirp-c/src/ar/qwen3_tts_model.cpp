@@ -439,6 +439,7 @@ bool TTSTransformer::load_tensor_data(const std::string & path, struct gguf_cont
         release_preferred_backend(backend);
         return false;
     }
+    ggml_backend_buffer_set_usage(model_.buffer, GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
     
     FILE * f = fopen(path.c_str(), "rb");
     if (!f) {
