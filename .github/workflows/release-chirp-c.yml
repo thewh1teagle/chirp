@@ -42,7 +42,13 @@ jobs:
       - name: Install Vulkan SDK (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: choco install vulkan-sdk -y --no-progress
+        run: |
+          choco install vulkan-sdk -y --no-progress
+          $sdk = Get-ChildItem "C:\VulkanSDK" -Directory | Sort-Object Name -Descending | Select-Object -First 1
+          if (-not $sdk) { throw "Vulkan SDK was not installed under C:\VulkanSDK" }
+          "VULKAN_SDK=$($sdk.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "$($sdk.FullName)\Bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+          "$($sdk.FullName)\Lib" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Build chirp-c
         shell: bash

@@ -10,7 +10,7 @@ on:
       chirp_c_tag:
         description: "chirp-c release tag to link against"
         required: true
-        default: "chirp-c-v0.2.0"
+        default: "chirp-c-v0.2.1"
         type: string
   push:
     tags:
@@ -21,7 +21,7 @@ permissions:
 
 env:
   VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
-  CHIRP_C_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.chirp_c_tag || 'chirp-c-v0.2.0' }}
+  CHIRP_C_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.chirp_c_tag || 'chirp-c-v0.2.1' }}
 
 jobs:
   create-release:
@@ -80,7 +80,13 @@ jobs:
       - name: Install Vulkan SDK (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
-        run: choco install vulkan-sdk -y --no-progress
+        run: |
+          choco install vulkan-sdk -y --no-progress
+          $sdk = Get-ChildItem "C:\VulkanSDK" -Directory | Sort-Object Name -Descending | Select-Object -First 1
+          if (-not $sdk) { throw "Vulkan SDK was not installed under C:\VulkanSDK" }
+          "VULKAN_SDK=$($sdk.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "$($sdk.FullName)\Bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+          "$($sdk.FullName)\Lib" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Install cgo toolchain (Windows)
         if: runner.os == 'Windows'
