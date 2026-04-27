@@ -2,14 +2,14 @@
 
 Build the native C/C++ runtime first:
 
-```bash
+```console
 cmake -S chirp-c -B chirp-c/build
 cmake --build chirp-c/build -j
 ```
 
 Or use the packaging script:
 
-```bash
+```console
 uv run python scripts/build-libs.py --backend cpu
 uv run python scripts/package-libs.py --backend cpu --platform linux-arm64 --archive
 ```
@@ -19,7 +19,7 @@ Release builds use accelerated backends by default: `metal` on macOS and
 
 Prepare local GGUF models under the ignored `models/` directory:
 
-```bash
+```console
 uv run hf download Qwen/Qwen3-TTS-12Hz-0.6B-Base \
   --local-dir models/Qwen3-TTS-12Hz-0.6B-Base
 
@@ -36,7 +36,7 @@ uv run --project chirp-c/scripts python chirp-c/scripts/convert_codec_to_gguf.py
 
 Or download packaged GGUF model bundles from a model release:
 
-```bash
+```console
 gh release download chirp-models-v0.1.1 \
   --pattern 'chirp-models-q5_0.tar.gz' \
   --dir dist
@@ -47,7 +47,7 @@ tar -xzf dist/chirp-models-q5_0.tar.gz -C models
 
 Build the Go runner:
 
-```bash
+```console
 cd chirp-runner
 go build ./cmd/chirp
 ```
@@ -58,7 +58,7 @@ libraries are downloaded.
 
 Download prebuilt native libraries from a GitHub release:
 
-```bash
+```console
 uv run python scripts/download-libs.py --tag chirp-c-v0.2.5 --backend vulkan
 ```
 
@@ -70,14 +70,14 @@ Runner releases use `chirp-runner-v*` tags. The runner release workflow
 downloads a pinned `chirp-c` release, builds the Go `cmd/chirp` binary with
 cgo enabled, and uploads platform archives:
 
-```bash
+```console
 git tag chirp-runner-v0.1.0
 git push origin chirp-runner-v0.1.0
 ```
 
 Manual runner releases can choose the native library version:
 
-```bash
+```console
 gh workflow run release-chirp-runner.yml \
   --ref main \
   -f version=chirp-runner-v0.1.0 \
@@ -86,7 +86,7 @@ gh workflow run release-chirp-runner.yml \
 
 Run checks:
 
-```bash
+```console
 uv run --project chirp-c/scripts python -c "import gguf, numpy, torch, safetensors, tqdm"
 
 cd chirp-runner

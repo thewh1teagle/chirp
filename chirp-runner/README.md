@@ -4,14 +4,14 @@ Small Go CLI and HTTP runner for the Qwen3-TTS C++ runtime.
 
 Build the native C runtime first:
 
-```bash
+```console
 cmake -S chirp-c -B chirp-c/build
 cmake --build chirp-c/build -j
 ```
 
 Run one synthesis:
 
-```bash
+```console
 cd chirp-runner
 go run ./cmd/chirp speak \
   --model ../../models/qwen3-tts-0.6b-q5_0.gguf \
@@ -23,7 +23,7 @@ go run ./cmd/chirp speak \
 
 Start the HTTP server:
 
-```bash
+```console
 cd chirp-runner
 go run ./cmd/chirp serve \
   --model ../../models/qwen3-tts-0.6b-q5_0.gguf \
@@ -32,7 +32,7 @@ go run ./cmd/chirp serve \
 
 Generate speech:
 
-```bash
+```console
 curl -sS http://127.0.0.1:PORT/v1/audio/speech \
   -H 'content-type: application/json' \
   -d '{"input":"hello","voice_reference":"../../tmp/refs/female1.wav"}' \

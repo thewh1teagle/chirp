@@ -193,7 +193,7 @@ Return convention:
 
 The CLI is a thin wrapper over the C API:
 
-```bash
+```console
 chirp/runtime/build/chirp-runtime \
   --model models/qwen3-tts-0.6b-f16.gguf \
   --codec models/qwen3-tts-tokenizer-f16.gguf \
@@ -296,7 +296,7 @@ resample_linear(...)
 
 Standalone runtime build:
 
-```bash
+```console
 cmake -S chirp/runtime -B chirp/runtime/build
 cmake --build chirp/runtime/build -j 8
 ```
@@ -307,7 +307,7 @@ This completed successfully.
 
 Standalone inference with reference voice:
 
-```bash
+```console
 chirp/runtime/build/chirp-runtime \
   --model models/qwen3-tts-0.6b-f16.gguf \
   --codec models/qwen3-tts-tokenizer-f16.gguf \
@@ -334,7 +334,7 @@ Validation:
 
 Native-tokenizer no-ref inference:
 
-```bash
+```console
 chirp/runtime/build/chirp-runtime \
   --model models/qwen3-tts-0.6b-f16.gguf \
   --codec models/qwen3-tts-tokenizer-f16.gguf \
@@ -349,7 +349,7 @@ No Python output appeared for this no-ref path, confirming text preparation is n
 
 Native speaker-reference inference after removing `prepare_inputs.py`:
 
-```bash
+```console
 chirp/runtime/build/chirp-runtime \
   --model models/qwen3-tts-0.6b-f16.gguf \
   --codec models/qwen3-tts-tokenizer-f16.gguf \
@@ -379,7 +379,7 @@ Validation:
 Native speaker-reference inference after replacing custom FFT/resampling with
 `kissfft` and `libsoxr`:
 
-```bash
+```console
 chirp/runtime/build/chirp-runtime \
   --model models/qwen3-tts-0.6b-f16.gguf \
   --codec models/qwen3-tts-tokenizer-f16.gguf \

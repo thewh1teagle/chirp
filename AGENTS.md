@@ -27,7 +27,7 @@ Each Python file should be a standalone `uv` script with its own dependencies de
 
 Example:
 
-```bash
+```console
 uv run plans/<name>/<name>_001.py
 ```
 
