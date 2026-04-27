@@ -71,8 +71,8 @@ downloads a pinned `chirp-c` release, builds the Go `cmd/chirp` binary with
 cgo enabled, and uploads platform archives:
 
 ```console
-git tag chirp-runner-v0.1.0
-git push origin chirp-runner-v0.1.0
+git tag chirp-runner-v0.2.0
+git push origin chirp-runner-v0.2.0
 ```
 
 Manual runner releases can choose the native library version:
@@ -80,7 +80,7 @@ Manual runner releases can choose the native library version:
 ```console
 gh workflow run release-chirp-runner.yml \
   --ref main \
-  -f version=chirp-runner-v0.1.0 \
+  -f version=chirp-runner-v0.2.0 \
   -f chirp_c_tag=chirp-c-v0.3.1
 ```
 
