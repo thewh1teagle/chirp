@@ -59,7 +59,7 @@ libraries are downloaded.
 Download prebuilt native libraries from a GitHub release:
 
 ```bash
-uv run python scripts/download-libs.py --tag chirp-c-v0.2.3 --backend vulkan
+uv run python scripts/download-libs.py --tag chirp-c-v0.2.4 --backend vulkan
 ```
 
 Native library releases use `chirp-c-v*` tags. The release workflow packages
@@ -81,7 +81,7 @@ Manual runner releases can choose the native library version:
 gh workflow run release-chirp-runner.yml \
   --ref main \
   -f version=chirp-runner-v0.1.0 \
-  -f chirp_c_tag=chirp-c-v0.2.3
+  -f chirp_c_tag=chirp-c-v0.2.4
 ```
 
 Run checks:

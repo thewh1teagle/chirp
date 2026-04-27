@@ -33,6 +33,20 @@ def copy_matches(src: Path, dst: Path, patterns: list[str]) -> list[str]:
     return copied
 
 
+def copy_windows_ggml_archives(src: Path, dst: Path) -> list[str]:
+    copied: list[str] = []
+    if not src.exists() or platform.system() != "Windows":
+        return copied
+    for path in sorted(src.rglob("ggml*.a")):
+        if not path.is_file():
+            continue
+        name = path.name if path.name.startswith("lib") else "lib" + path.name
+        out = dst / name
+        shutil.copy2(path, out)
+        copied.append(out.name)
+    return copied
+
+
 def make_archive(staging: Path, archive: Path) -> None:
     if archive.suffix == ".zip":
         with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zf:
@@ -73,7 +87,8 @@ def main() -> None:
         "ggml*.dll",
         "ggml*.lib",
     ])
-    copied += copy_matches(args.build_dir, lib_dir, ["libggml*.a", "ggml*.a"])
+    copied += copy_matches(args.build_dir, lib_dir, ["libggml*.a"])
+    copied += copy_windows_ggml_archives(args.build_dir, lib_dir)
     copied += copy_matches(args.build_dir / "_deps" / "kissfft-build", lib_dir, [
         "libkissfft*.a",
         "libkissfft*.so*",

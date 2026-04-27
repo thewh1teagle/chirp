@@ -10,7 +10,7 @@ on:
       chirp_c_tag:
         description: "chirp-c release tag to link against"
         required: true
-        default: "chirp-c-v0.2.3"
+        default: "chirp-c-v0.2.4"
         type: string
   push:
     tags:
@@ -21,7 +21,7 @@ permissions:
 
 env:
   VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
-  CHIRP_C_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.chirp_c_tag || 'chirp-c-v0.2.3' }}
+  CHIRP_C_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.chirp_c_tag || 'chirp-c-v0.2.4' }}
 
 jobs:
   create-release:
@@ -104,7 +104,9 @@ jobs:
         working-directory: runner
         run: |
           CGO_ENABLED=1 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+          CGO_LDFLAGS_ALLOW='-Wl,.*' \
           go build \
+            -x \
             -o "../dist/chirp-runner-${{ matrix.platform }}/${{ matrix.binary }}" \
             -ldflags "-X main.version=${VERSION} -X main.commit=${GITHUB_SHA::8}" \
             ./cmd/chirp

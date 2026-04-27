@@ -1,0 +1,134 @@
+name: test release
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner_tag:
+        description: "Runner release tag to test"
+        required: true
+        default: "chirp-runner-v0.1.4"
+        type: string
+      models_tag:
+        description: "Model release tag to test"
+        required: true
+        default: "chirp-models-v0.1.0"
+        type: string
+      run_inference:
+        description: "Run a tiny synthesis test; requires usable GPU backend on the runner"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux-x64
+            archive: chirp-runner-linux-x64.tar.gz
+            binary: chirp
+          - runner: macos-14
+            platform: darwin-arm64
+            archive: chirp-runner-darwin-arm64.tar.gz
+            binary: chirp
+          - runner: windows-latest
+            platform: windows-x64
+            archive: chirp-runner-windows-x64.zip
+            binary: chirp.exe
+    runs-on: ${{ matrix.runner }}
+    env:
+      RUNNER_TAG: ${{ github.event.inputs.runner_tag }}
+      MODELS_TAG: ${{ github.event.inputs.models_tag }}
+      RUN_INFERENCE: ${{ github.event.inputs.run_inference }}
+      ARCHIVE: ${{ matrix.archive }}
+      BINARY: ${{ matrix.binary }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSYS2 wget (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: wget
+
+      - name: Install Vulkan loader (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libvulkan1
+
+      - name: Download runner and models (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euxo pipefail
+          mkdir -p dist models
+          gh release download "${RUNNER_TAG}" --pattern "${ARCHIVE}" --dir dist
+          gh release download "${MODELS_TAG}" --pattern 'chirp-models-q5_0.tar.gz' --dir dist
+          tar -xzf "dist/${ARCHIVE}" -C dist
+          tar -xzf dist/chirp-models-q5_0.tar.gz -C models
+          find dist -maxdepth 2 -type f -print
+          find models -maxdepth 2 -type f -print
+          chmod +x "dist/chirp-runner-${{ matrix.platform }}/${BINARY}"
+
+      - name: Download runner and models (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          New-Item -ItemType Directory -Force -Path models | Out-Null
+          gh release download "$env:RUNNER_TAG" --pattern "$env:ARCHIVE" --dir dist
+          gh release download "$env:MODELS_TAG" --pattern 'chirp-models-q5_0.tar.gz' --dir dist
+          Expand-Archive -Path "dist\$env:ARCHIVE" -DestinationPath dist -Force
+          tar -xzf dist\chirp-models-q5_0.tar.gz -C models
+          Get-ChildItem -Recurse dist | Select-Object FullName
+          Get-ChildItem -Recurse models | Select-Object FullName
+
+      - name: Smoke test runner (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          "dist/chirp-runner-${{ matrix.platform }}/${BINARY}" --version
+          "dist/chirp-runner-${{ matrix.platform }}/${BINARY}" speak --help
+
+      - name: Smoke test runner (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & "dist\chirp-runner-${{ matrix.platform }}\$env:BINARY" --version
+          & "dist\chirp-runner-${{ matrix.platform }}\$env:BINARY" speak --help
+
+      - name: Tiny synthesis (Unix)
+        if: runner.os != 'Windows' && github.event.inputs.run_inference == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          "dist/chirp-runner-${{ matrix.platform }}/${BINARY}" speak \
+            --model models/chirp-models-q5_0/qwen3-tts-model.gguf \
+            --codec models/chirp-models-q5_0/qwen3-tts-codec.gguf \
+            --text "hello" \
+            --max-tokens 24 \
+            --output out.wav
+          test -s out.wav
+
+      - name: Tiny synthesis (Windows)
+        if: runner.os == 'Windows' && github.event.inputs.run_inference == 'true'
+        shell: pwsh
+        run: |
+          & "dist\chirp-runner-${{ matrix.platform }}\$env:BINARY" speak `
+            --model models\chirp-models-q5_0\qwen3-tts-model.gguf `
+            --codec models\chirp-models-q5_0\qwen3-tts-codec.gguf `
+            --text "hello" `
+            --max-tokens 24 `
+            --output out.wav
+          if (!(Test-Path out.wav) -or ((Get-Item out.wav).Length -eq 0)) { throw "out.wav was not created" }
