@@ -37,7 +37,7 @@ uv run --project chirp-c/scripts python chirp-c/scripts/convert_codec_to_gguf.py
 Or download packaged GGUF model bundles from a model release:
 
 ```bash
-gh release download chirp-models-v0.1.0 \
+gh release download chirp-models-v0.1.1 \
   --pattern 'chirp-models-q5_0.tar.gz' \
   --dir dist
 
@@ -59,7 +59,7 @@ libraries are downloaded.
 Download prebuilt native libraries from a GitHub release:
 
 ```bash
-uv run python scripts/download-libs.py --tag chirp-c-v0.2.4 --backend vulkan
+uv run python scripts/download-libs.py --tag chirp-c-v0.2.5 --backend vulkan
 ```
 
 Native library releases use `chirp-c-v*` tags. The release workflow packages
@@ -81,7 +81,7 @@ Manual runner releases can choose the native library version:
 gh workflow run release-chirp-runner.yml \
   --ref main \
   -f version=chirp-runner-v0.1.0 \
-  -f chirp_c_tag=chirp-c-v0.2.4
+  -f chirp_c_tag=chirp-c-v0.2.5
 ```
 
 Run checks:

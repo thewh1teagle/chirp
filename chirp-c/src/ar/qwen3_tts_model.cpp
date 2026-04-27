@@ -25,6 +25,14 @@ bool TTSTransformer::parse_config(struct gguf_context * ctx) {
         }
         return default_val;
     };
+
+    auto get_u32_key = [&](const std::string & key, int32_t default_val) -> int32_t {
+        int64_t idx = gguf_find_key(ctx, key.c_str());
+        if (idx >= 0) {
+            return (int32_t)gguf_get_val_u32(ctx, idx);
+        }
+        return default_val;
+    };
     
     auto get_f32_any = [&](std::initializer_list<const char *> keys, float default_val) -> float {
         for (const char * key : keys) {
@@ -34,6 +42,19 @@ bool TTSTransformer::parse_config(struct gguf_context * ctx) {
             }
         }
         return default_val;
+    };
+
+    auto get_string = [&](const std::string & key, std::string & out) -> bool {
+        int64_t idx = gguf_find_key(ctx, key.c_str());
+        if (idx < 0) {
+            return false;
+        }
+        const char * value = gguf_get_val_str(ctx, idx);
+        if (!value || !*value) {
+            return false;
+        }
+        out = value;
+        return true;
     };
     
     auto & cfg = model_.config;
@@ -140,11 +161,30 @@ bool TTSTransformer::parse_config(struct gguf_context * ctx) {
         "qwen3-tts.codec_think_eos_id",
     }, 2157);
 
-    cfg.english_language_id = get_u32_any({
-        "qwen3-tts.language.english_id",
-        "qwen3-tts.codec.language.english_id",
-        "qwen3-tts.language_id",
-    }, 2050);
+    const int32_t language_count = get_u32_any({
+        "qwen3-tts.language.count",
+    }, 0);
+    if (language_count <= 0) {
+        error_msg_ = "missing qwen3-tts language metadata";
+        return false;
+    }
+    cfg.languages.clear();
+    cfg.languages.reserve((size_t) language_count);
+    for (int32_t i = 0; i < language_count; ++i) {
+        std::string name;
+        if (!get_string("qwen3-tts.language." + std::to_string(i) + ".name", name)) {
+            error_msg_ = "missing qwen3-tts language name metadata";
+            return false;
+        }
+        int32_t id = get_u32_key("qwen3-tts.language." + std::to_string(i) + ".id", -1);
+        if (id < 0) {
+            error_msg_ = "missing qwen3-tts language id metadata";
+            return false;
+        }
+        std::transform(name.begin(), name.end(), name.begin(),
+                       [](unsigned char c) { return (char) std::tolower(c); });
+        cfg.languages.push_back({name, id});
+    }
     
     return true;
 }

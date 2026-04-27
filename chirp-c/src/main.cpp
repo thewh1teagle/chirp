@@ -100,7 +100,7 @@ int main(int argc, char ** argv) {
 
     fprintf(stderr, "preparing inputs\n");
     const char * ref = ref_path.empty() ? nullptr : ref_path.c_str();
-    if (!qwen3_tts_synthesize_to_file(tts, text.c_str(), ref, output_path.c_str())) {
+    if (!qwen3_tts_synthesize_to_file(tts, text.c_str(), ref, output_path.c_str(), -1)) {
         fprintf(stderr, "\nerror: %s\n", qwen3_tts_get_error(tts));
         qwen3_tts_free(tts);
         return 1;

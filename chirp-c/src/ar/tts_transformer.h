@@ -18,6 +18,11 @@ namespace qwen3_tts {
 
 using tts_generate_progress_callback = int (*)(void * user_data, int32_t current_frame, int32_t max_frames);
 
+struct tts_language {
+    std::string name;
+    int32_t id = -1;
+};
+
 #ifdef QWEN3_TTS_TIMING
 struct tts_timing {
     // Prefill phase
@@ -97,7 +102,7 @@ struct tts_transformer_config {
     int32_t codec_think_bos_id = 2156;
     int32_t codec_think_eos_id = 2157;
 
-    int32_t english_language_id = 2050;
+    std::vector<tts_language> languages;
 };
 
 // Transformer layer weights
@@ -263,7 +268,7 @@ public:
     bool generate(const int32_t * text_tokens, int32_t n_tokens,
                   const float * speaker_embd, int32_t max_len,
                   std::vector<int32_t> & output,
-                  int32_t language_id = 2050,
+                  int32_t language_id = -1,
                   float repetition_penalty = 1.05f,
                   float temperature = 0.9f,
                   int32_t top_k = 50,

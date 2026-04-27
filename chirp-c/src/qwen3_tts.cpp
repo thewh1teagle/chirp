@@ -75,8 +75,28 @@ const char * qwen3_tts_get_error(const qwen3_tts_context * ctx) {
     return ctx->error.c_str();
 }
 
+int32_t qwen3_tts_get_language_count(const qwen3_tts_context * ctx) {
+    if (!ctx) return 0;
+    return (int32_t) ctx->ar.get_config().languages.size();
+}
+
+const char * qwen3_tts_get_language_name(const qwen3_tts_context * ctx, int32_t index) {
+    if (!ctx || index < 0 || index >= (int32_t) ctx->ar.get_config().languages.size()) {
+        return nullptr;
+    }
+    return ctx->ar.get_config().languages[(size_t) index].name.c_str();
+}
+
+int32_t qwen3_tts_get_language_id(const qwen3_tts_context * ctx, int32_t index) {
+    if (!ctx || index < 0 || index >= (int32_t) ctx->ar.get_config().languages.size()) {
+        return -1;
+    }
+    return ctx->ar.get_config().languages[(size_t) index].id;
+}
+
 int qwen3_tts_synthesize_to_file(qwen3_tts_context * ctx, const char * text,
-                                    const char * ref_wav_path, const char * output_wav_path) {
+                                    const char * ref_wav_path, const char * output_wav_path,
+                                    int32_t language_id) {
     if (!ctx) return 0;
     ctx->error.clear();
     if (!text || !*text || !output_wav_path || !*output_wav_path) {
@@ -105,10 +125,23 @@ int qwen3_tts_synthesize_to_file(qwen3_tts_context * ctx, const char * text,
         ctx->error = "speaker embedding size does not match model hidden size";
         return 0;
     }
+    if (language_id >= 0) {
+        bool supported = false;
+        for (const auto & language : ctx->ar.get_config().languages) {
+            if (language.id == language_id) {
+                supported = true;
+                break;
+            }
+        }
+        if (!supported) {
+            ctx->error = "unsupported language_id";
+            return 0;
+        }
+    }
 
     std::vector<int32_t> codes;
     if (!ctx->ar.generate(tokens.data(), (int32_t) tokens.size(), speaker.data(), ctx->params.max_tokens, codes,
-                          ctx->ar.get_config().english_language_id, 1.05f, ctx->params.temperature,
+                          language_id, 1.05f, ctx->params.temperature,
                           ctx->params.top_k, ctx->params.progress_cb, ctx->params.progress_user_data)) {
         ctx->error = ctx->ar.get_error();
         return 0;

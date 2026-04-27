@@ -21,6 +21,7 @@ import "C"
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"unsafe"
 )
 
@@ -34,6 +35,11 @@ type Params struct {
 
 type Context struct {
 	ptr *C.qwen3_tts_context
+}
+
+type Language struct {
+	Name string `json:"name"`
+	ID   int    `json:"id"`
 }
 
 func New(params Params) (*Context, error) {
@@ -89,7 +95,39 @@ func (c *Context) Error() string {
 	return C.GoString(C.qwen3_tts_get_error(c.ptr))
 }
 
-func (c *Context) SynthesizeToFile(text, refPath, outputPath string) error {
+func (c *Context) Languages() []Language {
+	if c == nil || c.ptr == nil {
+		return nil
+	}
+	count := int(C.qwen3_tts_get_language_count(c.ptr))
+	languages := make([]Language, 0, count)
+	for i := 0; i < count; i++ {
+		name := C.qwen3_tts_get_language_name(c.ptr, C.int32_t(i))
+		if name == nil {
+			continue
+		}
+		languages = append(languages, Language{
+			Name: C.GoString(name),
+			ID:   int(C.qwen3_tts_get_language_id(c.ptr, C.int32_t(i))),
+		})
+	}
+	return languages
+}
+
+func (c *Context) LanguageID(language string) (int, error) {
+	language = strings.ToLower(strings.TrimSpace(language))
+	if language == "" || language == "auto" {
+		return -1, nil
+	}
+	for _, supported := range c.Languages() {
+		if language == supported.Name {
+			return supported.ID, nil
+		}
+	}
+	return 0, fmt.Errorf("unsupported language %q", language)
+}
+
+func (c *Context) SynthesizeToFile(text, refPath, outputPath, language string) error {
 	if c == nil || c.ptr == nil {
 		return errors.New("qwen3-tts context is nil")
 	}
@@ -111,7 +149,11 @@ func (c *Context) SynthesizeToFile(text, refPath, outputPath string) error {
 		defer C.free(unsafe.Pointer(cRef))
 	}
 
-	if C.qwen3_tts_synthesize_to_file(c.ptr, cText, cRef, cOutput) == 0 {
+	languageID, err := c.LanguageID(language)
+	if err != nil {
+		return err
+	}
+	if C.qwen3_tts_synthesize_to_file(c.ptr, cText, cRef, cOutput, C.int32_t(languageID)) == 0 {
 		return fmt.Errorf("synthesis failed: %s", c.Error())
 	}
 	return nil

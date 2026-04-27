@@ -39,6 +39,24 @@ func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) handleLanguages(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	languages := s.Languages()
+	if languages == nil {
+		writeError(w, http.StatusServiceUnavailable, errNoModel, "no model loaded")
+		return
+	}
+	names := make([]string, 0, len(languages)+1)
+	names = append(names, "auto")
+	for _, language := range languages {
+		names = append(names, language.Name)
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"languages": names,
+		"items":     languages,
+	})
+}
+
 func (s *Server) handleModelLoad(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		ModelPath   string  `json:"model_path"`
@@ -87,6 +105,7 @@ func (s *Server) handleSpeech(w http.ResponseWriter, r *http.Request) {
 		Input          string `json:"input"`
 		VoiceReference string `json:"voice_reference,omitempty"`
 		ResponseFormat string `json:"response_format,omitempty"`
+		Language       string `json:"language,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Input == "" {
 		writeError(w, http.StatusBadRequest, errInvalidRequest, "request body must contain input")
@@ -106,7 +125,7 @@ func (s *Server) handleSpeech(w http.ResponseWriter, r *http.Request) {
 	tmp.Close()
 	defer os.Remove(outPath)
 
-	if err := s.ctx.SynthesizeToFile(body.Input, body.VoiceReference, outPath); err != nil {
+	if err := s.ctx.SynthesizeToFile(body.Input, body.VoiceReference, outPath, body.Language); err != nil {
 		writeError(w, http.StatusInternalServerError, errInternal, err.Error())
 		return
 	}

@@ -190,6 +190,13 @@ class Qwen3TTSConverter:
         self.codec_pad_id = talker_config.get("codec_pad_id", 2148)
         self.codec_bos_id = talker_config.get("codec_bos_id", 2149)
         self.codec_eos_id = talker_config.get("codec_eos_token_id", 2150)
+        codec_language_id = talker_config.get("codec_language_id", {})
+        if not isinstance(codec_language_id, dict) or not codec_language_id:
+            raise ValueError("talker_config.codec_language_id is required")
+        self.codec_language_id = {
+            str(name).lower(): int(value)
+            for name, value in sorted(codec_language_id.items(), key=lambda item: str(item[0]).lower())
+        }
 
         # Model name
         self.model_name = "Qwen3-TTS-12Hz-0.6B"
@@ -501,6 +508,13 @@ class Qwen3TTSConverter:
         writer.add_uint32(f"{arch}.codec.pad_id", self.codec_pad_id)
         writer.add_uint32(f"{arch}.codec.bos_id", self.codec_bos_id)
         writer.add_uint32(f"{arch}.codec.eos_id", self.codec_eos_id)
+
+        # Supported synthesis languages. "auto" is a runtime mode and is not stored
+        # as a codec language ID because upstream represents it by omitting the ID.
+        writer.add_uint32(f"{arch}.language.count", len(self.codec_language_id))
+        for i, (name, language_id) in enumerate(self.codec_language_id.items()):
+            writer.add_string(f"{arch}.language.{i}.name", name)
+            writer.add_uint32(f"{arch}.language.{i}.id", language_id)
 
         logger.info("Added model metadata")
 

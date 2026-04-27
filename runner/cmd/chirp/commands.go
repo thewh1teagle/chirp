@@ -16,7 +16,7 @@ func newRootCommand() *cobra.Command {
 		Short:   "Qwen3-TTS runner",
 		Version: version,
 	}
-	rootCmd.AddCommand(newServeCommand(), newSpeakCommand())
+	rootCmd.AddCommand(newServeCommand(), newSpeakCommand(), newLanguagesCommand())
 	return rootCmd
 }
 
@@ -61,6 +61,7 @@ func newServeCommand() *cobra.Command {
 
 func newSpeakCommand() *cobra.Command {
 	var modelPath, codecPath, text, refPath, outputPath string
+	var language string
 	var maxTokens, topK int
 	var temperature float32
 
@@ -82,7 +83,7 @@ func newSpeakCommand() *cobra.Command {
 				return err
 			}
 			defer ctx.Close()
-			if err := ctx.SynthesizeToFile(text, refPath, outputPath); err != nil {
+			if err := ctx.SynthesizeToFile(text, refPath, outputPath, language); err != nil {
 				return err
 			}
 			enc := json.NewEncoder(os.Stdout)
@@ -94,8 +95,42 @@ func newSpeakCommand() *cobra.Command {
 	cmd.Flags().StringVar(&text, "text", "", "text to synthesize")
 	cmd.Flags().StringVar(&refPath, "ref", "", "optional voice reference WAV")
 	cmd.Flags().StringVarP(&outputPath, "output", "o", "", "output WAV path")
+	cmd.Flags().StringVar(&language, "language", "auto", "target language")
 	cmd.Flags().IntVar(&maxTokens, "max-tokens", 0, "maximum generated frames (0 = runtime default)")
 	cmd.Flags().Float32Var(&temperature, "temperature", 0.9, "sampling temperature")
 	cmd.Flags().IntVar(&topK, "top-k", 50, "top-k sampling")
+	return cmd
+}
+
+func newLanguagesCommand() *cobra.Command {
+	var modelPath, codecPath string
+	cmd := &cobra.Command{
+		Use:   "languages",
+		Short: "List supported synthesis languages",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if modelPath == "" || codecPath == "" {
+				return fmt.Errorf("--model and --codec are required")
+			}
+			ctx, err := chirpc.New(chirpc.Params{
+				ModelPath: modelPath,
+				CodecPath: codecPath,
+			})
+			if err != nil {
+				return err
+			}
+			defer ctx.Close()
+			names := []string{"auto"}
+			for _, language := range ctx.Languages() {
+				names = append(names, language.Name)
+			}
+			enc := json.NewEncoder(os.Stdout)
+			return enc.Encode(map[string]any{
+				"languages": names,
+				"items":     ctx.Languages(),
+			})
+		},
+	}
+	cmd.Flags().StringVar(&modelPath, "model", "", "Qwen3-TTS model GGUF")
+	cmd.Flags().StringVar(&codecPath, "codec", "", "Qwen3-TTS codec GGUF")
 	return cmd
 }
