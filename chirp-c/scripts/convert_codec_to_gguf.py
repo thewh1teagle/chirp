@@ -2,9 +2,13 @@
 """
 Convert Qwen3-TTS-Tokenizer-12Hz model to GGUF format.
 
+The codec checkpoint is bundled under the Qwen3-TTS base checkpoint:
+    huggingface-cli download Qwen/Qwen3-TTS-12Hz-0.6B-Base \
+        --local-dir models/Qwen3-TTS-12Hz-0.6B-Base
+
 Usage:
     python scripts/convert_codec_to_gguf.py \
-        --input models/Qwen3-TTS-Tokenizer-12Hz \
+        --input models/Qwen3-TTS-12Hz-0.6B-Base/speech_tokenizer \
         --output models/qwen3-tts-tokenizer-f16.gguf \
         --type f16
 """

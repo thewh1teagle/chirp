@@ -15,6 +15,7 @@ _deps/
 # Build artifacts
 dist/
 third_party/
+models/
 *.o
 *.a
 *.so

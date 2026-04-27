@@ -2,8 +2,12 @@
 """
 Convert HuggingFace Qwen3-TTS-12Hz-0.6B-Base model to GGUF format.
 
+Download the source checkpoint first:
+    huggingface-cli download Qwen/Qwen3-TTS-12Hz-0.6B-Base \
+        --local-dir models/Qwen3-TTS-12Hz-0.6B-Base
+
 Usage:
-    python scripts/convert_tts_to_gguf.py \
+    python scripts/convert_model_to_gguf.py \
         --input models/Qwen3-TTS-12Hz-0.6B-Base \
         --output models/qwen3-tts-0.6b-f16.gguf \
         --type f16

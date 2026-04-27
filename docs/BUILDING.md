@@ -17,6 +17,23 @@ uv run python scripts/package-libs.py --backend cpu --platform linux-arm64 --arc
 Release builds use accelerated backends by default: `metal` on macOS and
 `vulkan` on Linux/Windows.
 
+Prepare local GGUF models under the ignored `models/` directory:
+
+```bash
+huggingface-cli download Qwen/Qwen3-TTS-12Hz-0.6B-Base \
+  --local-dir models/Qwen3-TTS-12Hz-0.6B-Base
+
+uv run --project chirp-c/scripts python chirp-c/scripts/convert_model_to_gguf.py \
+  --input models/Qwen3-TTS-12Hz-0.6B-Base \
+  --output models/qwen3-tts-0.6b-q4_k.gguf \
+  --type q4_k
+
+uv run --project chirp-c/scripts python chirp-c/scripts/convert_codec_to_gguf.py \
+  --input models/Qwen3-TTS-12Hz-0.6B-Base/speech_tokenizer \
+  --output models/qwen3-tts-tokenizer-f16.gguf \
+  --type f16
+```
+
 Build the Go runner:
 
 ```bash
