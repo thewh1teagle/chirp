@@ -20,12 +20,14 @@ import json
 import logging
 import re
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any, Iterator
 
 import numpy as np
 import torch
 from safetensors import safe_open
+from transformers import AutoTokenizer
 from tqdm import tqdm
 
 # Add llama.cpp's gguf-py to path when running from this in-tree tool.
@@ -400,6 +402,27 @@ class Qwen3TTSConverter:
 
         return tokens, toktypes, merges
 
+    def _load_tokenizer_json(self) -> str:
+        """Load or materialize a HuggingFace fast tokenizer JSON blob."""
+        tokenizer_json_path = self.input_dir / "tokenizer.json"
+        if tokenizer_json_path.exists():
+            return tokenizer_json_path.read_text(encoding="utf-8")
+
+        with tempfile.TemporaryDirectory(prefix="chirp-tokenizer-") as tmpdir:
+            tokenizer = AutoTokenizer.from_pretrained(
+                str(self.input_dir),
+                local_files_only=True,
+                use_fast=True,
+                trust_remote_code=True,
+            )
+            if not getattr(tokenizer, "is_fast", False):
+                raise RuntimeError("expected a fast HuggingFace tokenizer to export tokenizer.json")
+            tokenizer.save_pretrained(tmpdir)
+            generated = Path(tmpdir) / "tokenizer.json"
+            if not generated.exists():
+                raise RuntimeError("failed to generate tokenizer.json from HuggingFace tokenizer files")
+            return generated.read_text(encoding="utf-8")
+
     def convert(self) -> None:
         """Convert the model to GGUF format."""
         logger.info(f"Converting {self.model_name} to GGUF format")
@@ -530,6 +553,7 @@ class Qwen3TTSConverter:
         # Tokenizer model type
         writer.add_tokenizer_model("gpt2")
         writer.add_tokenizer_pre("qwen2")
+        writer.add_string("tokenizer.huggingface.json", self._load_tokenizer_json())
 
         # Token list
         writer.add_token_list(tokens)

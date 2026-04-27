@@ -2,16 +2,16 @@ package chirpc
 
 /*
 #cgo CFLAGS: -I${SRCDIR}/../../third_party/chirp-c/include -I${SRCDIR}/../../../chirp-c/src
-#cgo LDFLAGS: -L${SRCDIR}/../../third_party/chirp-c/lib -L${SRCDIR}/../../../chirp-c/build -lchirp-runtime-lib
+#cgo LDFLAGS: -L${SRCDIR}/../../third_party/chirp-c/lib -L${SRCDIR}/../../../chirp-c/build -L${SRCDIR}/../../../chirp-c/build/_deps/tokenizers_cpp-build -L${SRCDIR}/../../../chirp-c/build/_deps/tokenizers_cpp-build/sentencepiece/src -lchirp-runtime-lib -ltokenizers_cpp -ltokenizers_c -lsentencepiece
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src -lggml -lggml-cpu -lggml-base
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src/ggml-blas
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src/ggml-metal
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src/ggml-vulkan
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/kissfft-build -lkissfft-float
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/soxr-build/src -lsoxr
-#cgo linux LDFLAGS: -lggml-vulkan -lvulkan -lstdc++ -lm -lpthread -lgomp -Wl,-rpath,${SRCDIR}/../../third_party/chirp-c/lib -Wl,-rpath,${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src
-#cgo darwin LDFLAGS: -lggml-metal -lggml-blas -lstdc++ -lm -framework Accelerate -framework Metal -framework Foundation -framework MetalKit -framework CoreGraphics -Wl,-rpath,${SRCDIR}/../../third_party/chirp-c/lib -Wl,-rpath,${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src
-#cgo windows LDFLAGS: -lggml-vulkan -lvulkan-1-delay -lm
+#cgo linux LDFLAGS: -lggml-vulkan -lvulkan -lstdc++ -lm -lpthread -lgomp -ldl -Wl,-rpath,${SRCDIR}/../../third_party/chirp-c/lib -Wl,-rpath,${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src
+#cgo darwin LDFLAGS: -lggml-metal -lggml-blas -lstdc++ -lm -framework Accelerate -framework Metal -framework Foundation -framework MetalKit -framework CoreGraphics -framework Security -framework CoreFoundation -framework SystemConfiguration -Wl,-rpath,${SRCDIR}/../../third_party/chirp-c/lib -Wl,-rpath,${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src
+#cgo windows LDFLAGS: -lggml-vulkan -lvulkan-1-delay -lm -lntdll -lwsock32 -lws2_32 -lBcrypt -liphlpapi -luserenv -lpsapi
 #cgo windows LDFLAGS: -Wl,-Bstatic -lstdc++ -lgomp -lwinpthread -Wl,-Bdynamic
 #include "qwen3_tts.h"
 #include <stdlib.h>

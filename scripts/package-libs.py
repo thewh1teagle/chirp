@@ -103,6 +103,20 @@ def main() -> None:
         "soxr*.lib",
         "soxr*.dll",
     ])
+    copied += copy_matches(args.build_dir / "_deps" / "tokenizers_cpp-build", lib_dir, [
+        "libtokenizers_cpp.a",
+        "libtokenizers_c.a",
+        "tokenizers_cpp.lib",
+        "tokenizers_c.lib",
+    ])
+    copied += copy_matches(args.build_dir / "_deps" / "tokenizers_cpp-build" / "sentencepiece" / "src", lib_dir, [
+        "libsentencepiece.a",
+        "sentencepiece.lib",
+    ])
+    copied += copy_matches(args.build_dir / "_deps" / "tokenizers_cpp-build", lib_dir, [
+        "libonig.a",
+        "onig.lib",
+    ])
     copied += copy_matches(args.build_dir / "delay", lib_dir, ["libvulkan-1-delay.a"])
     if not copied:
         raise SystemExit(f"no native libraries found under {args.build_dir}")

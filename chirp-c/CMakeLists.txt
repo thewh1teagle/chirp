@@ -25,6 +25,30 @@ if(NOT llama_cpp_POPULATED)
 endif()
 add_subdirectory(${llama_cpp_SOURCE_DIR}/ggml ${llama_cpp_BINARY_DIR}/ggml)
 
+set(MLC_ENABLE_SENTENCEPIECE_TOKENIZER OFF CACHE BOOL "" FORCE)
+set(SPM_ENABLE_SHARED OFF CACHE BOOL "" FORCE)
+set(SPM_ENABLE_TCMALLOC OFF CACHE BOOL "" FORCE)
+set(SPM_BUILD_TEST OFF CACHE BOOL "" FORCE)
+set(SPM_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+    tokenizers_cpp
+    GIT_REPOSITORY https://github.com/mlc-ai/tokenizers-cpp.git
+    GIT_TAG acbdc5a27ae01ba74cda756f94da698d40f11dfe
+    GIT_SHALLOW TRUE
+    GIT_SUBMODULES msgpack sentencepiece
+)
+FetchContent_GetProperties(tokenizers_cpp)
+if(NOT tokenizers_cpp_POPULATED)
+    FetchContent_Populate(tokenizers_cpp)
+endif()
+if(WIN32 AND MINGW)
+    file(READ "${tokenizers_cpp_SOURCE_DIR}/CMakeLists.txt" TOKENIZERS_CPP_CMAKE)
+    string(REPLACE "x86_64-pc-windows-msvc" "x86_64-pc-windows-gnu" TOKENIZERS_CPP_CMAKE "${TOKENIZERS_CPP_CMAKE}")
+    string(REPLACE "aarch64-pc-windows-msvc" "aarch64-pc-windows-gnullvm" TOKENIZERS_CPP_CMAKE "${TOKENIZERS_CPP_CMAKE}")
+    file(WRITE "${tokenizers_cpp_SOURCE_DIR}/CMakeLists.txt" "${TOKENIZERS_CPP_CMAKE}")
+endif()
+add_subdirectory(${tokenizers_cpp_SOURCE_DIR} ${tokenizers_cpp_BINARY_DIR})
+
 FetchContent_Declare(
     dr_libs
     URL https://raw.githubusercontent.com/mackron/dr_libs/master/dr_wav.h
@@ -93,7 +117,7 @@ set(CHIRP_RUNTIME_SOURCES
 
 add_library(chirp-runtime-lib STATIC ${CHIRP_RUNTIME_SOURCES})
 
-target_link_libraries(chirp-runtime-lib PUBLIC ggml kissfft soxr ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(chirp-runtime-lib PUBLIC ggml kissfft soxr tokenizers_cpp ${CMAKE_THREAD_LIBS_INIT})
 target_include_directories(chirp-runtime-lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ar

@@ -6,12 +6,12 @@ on:
       runner_tag:
         description: "Runner release tag to test"
         required: true
-        default: "chirp-runner-v0.1.5"
+        default: "chirp-runner-v0.2.0"
         type: string
       models_tag:
         description: "Model release tag to test"
         required: true
-        default: "chirp-models-v0.1.2"
+        default: "chirp-models-v0.1.3"
         type: string
 
 permissions:
