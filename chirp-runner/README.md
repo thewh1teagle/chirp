@@ -12,7 +12,7 @@ cmake --build chirp-c/build -j
 Run one synthesis:
 
 ```bash
-cd runner
+cd chirp-runner
 go run ./cmd/chirp speak \
   --model ../../models/qwen3-tts-0.6b-q5_0.gguf \
   --codec ../../models/qwen3-tts-tokenizer-f16.gguf \
@@ -24,7 +24,7 @@ go run ./cmd/chirp speak \
 Start the HTTP server:
 
 ```bash
-cd runner
+cd chirp-runner
 go run ./cmd/chirp serve \
   --model ../../models/qwen3-tts-0.6b-q5_0.gguf \
   --codec ../../models/qwen3-tts-tokenizer-f16.gguf

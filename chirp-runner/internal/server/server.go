@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/thewh1teagle/chirp/runner/internal/chirpc"
+	"github.com/thewh1teagle/chirp/chirp-runner/internal/chirpc"
 )
 
 type Server struct {

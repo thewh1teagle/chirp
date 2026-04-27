@@ -40,7 +40,7 @@ The model bundle contains the AR model and codec GGUF. It does not contain the n
 
 ## Runner
 
-`runner/` is a Go CLI and HTTP server around the C API.
+`chirp-runner/` is a Go CLI and HTTP server around the C API.
 
 Responsibilities:
 
@@ -49,7 +49,7 @@ Responsibilities:
 - Link against released or locally built `chirp-c` libraries with cgo.
 - Keep process/server concerns out of the native runtime.
 
-During development, the runner can link to `chirp-c/build`. Release builds download a pinned `chirp-c` archive into `runner/third_party/chirp-c` first.
+During development, the runner can link to `chirp-c/build`. Release builds download a pinned `chirp-c` archive into `chirp-runner/third_party/chirp-c` first.
 
 Runner release artifacts use `chirp-runner-v*` tags:
 
@@ -61,7 +61,7 @@ The runner is intentionally separate from the model bundle. Users can update nat
 
 ## Desktop
 
-`desktop/` is the Tauri + React app.
+`chirp-desktop/` is the Tauri + React app.
 
 Responsibilities:
 

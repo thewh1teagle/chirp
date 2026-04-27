@@ -48,12 +48,12 @@ tar -xzf dist/chirp-models-q5_0.tar.gz -C models
 Build the Go runner:
 
 ```bash
-cd runner
+cd chirp-runner
 go build ./cmd/chirp
 ```
 
 The Go runner links to local `chirp-c/build` during development. It also
-checks `runner/third_party/chirp-c` first, which is where prebuilt release
+checks `chirp-runner/third_party/chirp-c` first, which is where prebuilt release
 libraries are downloaded.
 
 Download prebuilt native libraries from a GitHub release:
@@ -89,6 +89,6 @@ Run checks:
 ```bash
 uv run --project chirp-c/scripts python -c "import gguf, numpy, torch, safetensors, tqdm"
 
-cd runner
+cd chirp-runner
 go test ./...
 ```

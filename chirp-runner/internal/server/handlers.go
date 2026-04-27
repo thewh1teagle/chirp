@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/thewh1teagle/chirp/runner/internal/chirpc"
+	"github.com/thewh1teagle/chirp/chirp-runner/internal/chirpc"
 )
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {

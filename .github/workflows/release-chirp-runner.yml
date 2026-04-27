@@ -69,7 +69,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: runner/go.mod
+          go-version-file: chirp-runner/go.mod
 
       - uses: astral-sh/setup-uv@v5
 
@@ -101,7 +101,7 @@ jobs:
 
       - name: Build chirp runner
         shell: bash
-        working-directory: runner
+        working-directory: chirp-runner
         run: |
           CGO_ENABLED=1 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
           CGO_LDFLAGS_ALLOW='-Wl,.*' \

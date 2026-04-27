@@ -1,4 +1,4 @@
-module github.com/thewh1teagle/chirp/runner
+module github.com/thewh1teagle/chirp/chirp-runner
 
 go 1.22.2
 

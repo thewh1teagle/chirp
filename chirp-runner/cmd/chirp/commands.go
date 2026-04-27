@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/thewh1teagle/chirp/runner/internal/chirpc"
-	"github.com/thewh1teagle/chirp/runner/internal/server"
+	"github.com/thewh1teagle/chirp/chirp-runner/internal/chirpc"
+	"github.com/thewh1teagle/chirp/chirp-runner/internal/server"
 )
 
 func newRootCommand() *cobra.Command {

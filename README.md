@@ -6,7 +6,8 @@ Native Qwen3-TTS inference experiments.
 
 ```text
 chirp-c/   C/C++ runtime, C API, GGUF conversion scripts
-runner/    Go CLI and HTTP server using chirp-c through cgo
+chirp-runner/ Go CLI and HTTP server using chirp-c through cgo
+chirp-desktop/ Tauri + React desktop app
 plans/     implementation notes and validation logs
 ```
 

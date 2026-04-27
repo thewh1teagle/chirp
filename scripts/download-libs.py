@@ -55,7 +55,7 @@ def main() -> None:
     parser.add_argument("--tag", help="release tag; overrides --version")
     parser.add_argument("--backend", default="cpu")
     parser.add_argument("--platform", default=host_name())
-    parser.add_argument("--out-dir", type=Path, default=ROOT / "runner" / "third_party" / "chirp-c")
+    parser.add_argument("--out-dir", type=Path, default=ROOT / "chirp-runner" / "third_party" / "chirp-c")
     args = parser.parse_args()
 
     stem = f"chirp-c-{args.platform}-{args.backend}"

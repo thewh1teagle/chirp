@@ -77,7 +77,7 @@ def main() -> int:
     archive_name, member_name = asset
     is_windows = target.endswith("windows-msvc")
     sidecar_name = f"chirp-runner-{target}" + (".exe" if is_windows else "")
-    dest_dir = ROOT / "desktop" / "src-tauri" / "binaries"
+    dest_dir = ROOT / "chirp-desktop" / "src-tauri" / "binaries"
     dest = dest_dir / sidecar_name
 
     if dest.exists():
