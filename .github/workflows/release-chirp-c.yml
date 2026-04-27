@@ -35,6 +35,14 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
 
+      - name: Cache CMake dependencies
+        uses: actions/cache@v4
+        with:
+          path: chirp-c/build/_deps
+          key: chirp-c-deps-${{ matrix.platform }}-${{ matrix.backend }}-${{ hashFiles('chirp-c/CMakeLists.txt', 'scripts/build-libs.py', 'scripts/package-libs.py') }}
+          restore-keys: |
+            chirp-c-deps-${{ matrix.platform }}-${{ matrix.backend }}-
+
       - name: Install Vulkan deps (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq libvulkan-dev glslang-tools glslc libshaderc-dev
