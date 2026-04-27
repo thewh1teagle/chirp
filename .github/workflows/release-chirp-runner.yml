@@ -10,7 +10,7 @@ on:
       chirp_c_tag:
         description: "chirp-c release tag to link against"
         required: true
-        default: "chirp-c-v0.2.2"
+        default: "chirp-c-v0.2.3"
         type: string
   push:
     tags:
@@ -21,7 +21,7 @@ permissions:
 
 env:
   VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
-  CHIRP_C_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.chirp_c_tag || 'chirp-c-v0.2.2' }}
+  CHIRP_C_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.chirp_c_tag || 'chirp-c-v0.2.3' }}
 
 jobs:
   create-release:
