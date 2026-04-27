@@ -73,6 +73,7 @@ def main() -> None:
         "ggml*.dll",
         "ggml*.lib",
     ])
+    copied += copy_matches(args.build_dir, lib_dir, ["libggml*.a", "ggml*.a"])
     copied += copy_matches(args.build_dir / "_deps" / "kissfft-build", lib_dir, [
         "libkissfft*.a",
         "libkissfft*.so*",
