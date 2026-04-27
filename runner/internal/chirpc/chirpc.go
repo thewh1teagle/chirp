@@ -9,7 +9,7 @@ package chirpc
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src/ggml-vulkan
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/kissfft-build -lkissfft-float
 #cgo LDFLAGS: -L${SRCDIR}/../../../chirp-c/build/_deps/soxr-build/src -lsoxr
-#cgo linux LDFLAGS: -lggml-vulkan -lvulkan -Wl,-rpath,${SRCDIR}/../../third_party/chirp-c/lib -Wl,-rpath,${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src
+#cgo linux LDFLAGS: -lggml-vulkan -lvulkan -lgomp -Wl,-rpath,${SRCDIR}/../../third_party/chirp-c/lib -Wl,-rpath,${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src
 #cgo darwin LDFLAGS: -lggml-metal -lggml-blas -framework Accelerate -framework Metal -framework Foundation -framework MetalKit -framework CoreGraphics -Wl,-rpath,${SRCDIR}/../../third_party/chirp-c/lib -Wl,-rpath,${SRCDIR}/../../../chirp-c/build/_deps/llama_cpp-build/ggml/src
 #cgo windows LDFLAGS: -lggml-vulkan -lvulkan-1
 #cgo LDFLAGS: -lstdc++ -lm
