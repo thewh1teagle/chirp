@@ -4,7 +4,7 @@ Native Qwen3-TTS inference experiments.
 
 ## Layout
 
-```text
+```console
 chirp-c/   C/C++ runtime, C API, GGUF conversion scripts
 chirp-runner/ Go CLI and HTTP server using chirp-c through cgo
 chirp-desktop/ Tauri + React desktop app
