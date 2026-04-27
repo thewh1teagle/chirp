@@ -39,16 +39,17 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq libvulkan-dev glslang-tools glslc libshaderc-dev
 
-      - name: Install Vulkan SDK (Windows)
+      - name: Install Vulkan deps (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: mingw-w64-ucrt-x86_64-vulkan-devel mingw-w64-ucrt-x86_64-shaderc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-tools
+
+      - name: Add UCRT64 to PATH
         if: runner.os == 'Windows'
         shell: pwsh
-        run: |
-          choco install vulkan-sdk -y --no-progress
-          $sdk = Get-ChildItem "C:\VulkanSDK" -Directory | Sort-Object Name -Descending | Select-Object -First 1
-          if (-not $sdk) { throw "Vulkan SDK was not installed under C:\VulkanSDK" }
-          "VULKAN_SDK=$($sdk.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "$($sdk.FullName)\Bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-          "$($sdk.FullName)\Lib" | Out-File -FilePath $env:GITHUB_PATH -Append
+        run: echo "$env:RUNNER_TEMP\msys64\ucrt64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Build chirp-c
         shell: bash

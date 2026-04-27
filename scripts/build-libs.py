@@ -31,13 +31,35 @@ def default_backend() -> str:
     return "cpu"
 
 
+def default_generator() -> str:
+    generator = os.environ.get("CMAKE_GENERATOR", "")
+    if generator:
+        return generator
+    if platform.system() == "Windows":
+        return "MinGW Makefiles"
+    return ""
+
+
+def build_vulkan_delay_lib(build_dir: Path) -> None:
+    if platform.system() != "Windows":
+        return
+    delay_dir = build_dir / "delay"
+    delay_dir.mkdir(parents=True, exist_ok=True)
+    result = subprocess.run(["where", "vulkan-1.dll"], capture_output=True, text=True)
+    dll_path = "vulkan-1.dll"
+    if result.returncode == 0 and result.stdout.strip():
+        dll_path = result.stdout.strip().splitlines()[0]
+    run(["gendef", dll_path], cwd=delay_dir)
+    run(["dlltool", "--input-def", "vulkan-1.def", "--output-delaylib", "libvulkan-1-delay.a"], cwd=delay_dir)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build chirp-c native libraries")
     parser.add_argument("--backend", default=default_backend(), choices=["cpu", "metal", "vulkan"], help="backend to build")
     parser.add_argument("--build-dir", type=Path, default=ROOT / "chirp-c" / "build")
     parser.add_argument("--config", default="Release")
     parser.add_argument("--target", default="chirp-runtime-lib")
-    parser.add_argument("--generator", default=os.environ.get("CMAKE_GENERATOR", ""))
+    parser.add_argument("--generator", default=default_generator())
     parser.add_argument("--preset-name", default=default_preset())
     args = parser.parse_args()
 
@@ -61,6 +83,8 @@ def main() -> None:
         configure.extend(["-G", args.generator])
     run(configure)
     run(["cmake", "--build", str(args.build_dir), "--target", args.target, "--config", args.config, "-j"])
+    if args.backend == "vulkan":
+        build_vulkan_delay_lib(args.build_dir)
     print(f"built {args.target} in {args.build_dir} ({args.preset_name})")
 
 

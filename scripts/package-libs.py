@@ -87,6 +87,7 @@ def main() -> None:
         "soxr*.lib",
         "soxr*.dll",
     ])
+    copied += copy_matches(args.build_dir / "delay", lib_dir, ["libvulkan-1-delay.a"])
     if not copied:
         raise SystemExit(f"no native libraries found under {args.build_dir}")
 

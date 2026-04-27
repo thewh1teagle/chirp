@@ -10,7 +10,7 @@ on:
       chirp_c_tag:
         description: "chirp-c release tag to link against"
         required: true
-        default: "chirp-c-v0.2.1"
+        default: "chirp-c-v0.2.2"
         type: string
   push:
     tags:
@@ -21,7 +21,7 @@ permissions:
 
 env:
   VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
-  CHIRP_C_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.chirp_c_tag || 'chirp-c-v0.2.1' }}
+  CHIRP_C_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.chirp_c_tag || 'chirp-c-v0.2.2' }}
 
 jobs:
   create-release:
@@ -77,29 +77,17 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq libvulkan-dev
 
-      - name: Install Vulkan SDK (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          choco install vulkan-sdk -y --no-progress
-          $sdk = Get-ChildItem "C:\VulkanSDK" -Directory | Sort-Object Name -Descending | Select-Object -First 1
-          if (-not $sdk) { throw "Vulkan SDK was not installed under C:\VulkanSDK" }
-          "VULKAN_SDK=$($sdk.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "CGO_LDFLAGS=-L$($sdk.FullName)\Lib" | Out-File -FilePath $env:GITHUB_ENV -Append
-          "$($sdk.FullName)\Bin" | Out-File -FilePath $env:GITHUB_PATH -Append
-          "$($sdk.FullName)\Lib" | Out-File -FilePath $env:GITHUB_PATH -Append
-
-      - name: Install cgo toolchain (Windows)
+      - name: Install Vulkan deps (Windows)
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
-          install: mingw-w64-x86_64-gcc
+          msystem: UCRT64
+          install: mingw-w64-ucrt-x86_64-vulkan-devel mingw-w64-ucrt-x86_64-gcc
 
-      - name: Add MinGW to PATH
+      - name: Add UCRT64 to PATH
         if: runner.os == 'Windows'
         shell: pwsh
-        run: echo "$env:RUNNER_TEMP\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+        run: echo "$env:RUNNER_TEMP\msys64\ucrt64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Download chirp-c libraries
         shell: bash
