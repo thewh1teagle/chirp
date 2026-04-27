@@ -63,7 +63,7 @@ def package(quant: str, model: Path, codec: Path, out_dir: Path, version: str) -
                 "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
                 "Qwen/Qwen3-TTS speech_tokenizer",
             ],
-            "runtime": "chirp-c >= v0.2.1",
+            "runtime": "chirp-c >= v0.2.3",
             "files": [],
         }
         for src, dst_name in files:
@@ -79,7 +79,7 @@ def package(quant: str, model: Path, codec: Path, out_dir: Path, version: str) -
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Package Qwen3-TTS GGUF model bundles")
-    parser.add_argument("--quant", required=True, choices=["q8_0", "q4_k"])
+    parser.add_argument("--quant", required=True, choices=["q8_0", "q5_0", "q4_k"])
     parser.add_argument("--version", default="chirp-models-v0.1.0")
     parser.add_argument("--models-dir", type=Path, default=MODELS_DIR)
     parser.add_argument("--out-dir", type=Path, default=ROOT / "dist")
