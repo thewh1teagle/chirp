@@ -93,7 +93,6 @@ func recoveryMiddleware(next http.Handler) http.Handler {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", s.handleHealth)
-	mux.HandleFunc("GET /ready", s.handleReady)
 	mux.HandleFunc("GET /v1/languages", s.handleLanguages)
 	mux.HandleFunc("GET /v1/models", s.handleModels)
 	mux.HandleFunc("POST /v1/models/load", s.handleModelLoad)

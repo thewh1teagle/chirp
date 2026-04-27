@@ -10,21 +10,19 @@ import (
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-}
-
-func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
 	s.mu.Lock()
 	loaded := s.ctx != nil
 	name := s.modelName
 	s.mu.Unlock()
-	if !loaded {
-		w.WriteHeader(http.StatusServiceUnavailable)
-		_ = json.NewEncoder(w).Encode(map[string]string{"status": "not_ready", "message": "no model loaded"})
-		return
+	status := "ok"
+	if loaded {
+		status = "ready"
 	}
-	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ready", "model": name})
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"status": status,
+		"loaded": loaded,
+		"model":  name,
+	})
 }
 
 func (s *Server) handleModels(w http.ResponseWriter, r *http.Request) {

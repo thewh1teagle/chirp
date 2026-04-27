@@ -130,12 +130,11 @@ Useful endpoints:
 
 ```console
 GET /health
-GET /ready
 GET /v1/models
 GET /v1/languages
 POST /v1/audio/speech
 POST /v1/models/load
-POST /v1/models/unload
+DELETE /v1/models
 ```
 
 ## Generation Controls
