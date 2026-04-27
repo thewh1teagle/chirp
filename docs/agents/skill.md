@@ -20,14 +20,14 @@ chirp-models-v0.1.3
 Download the runner for the current platform:
 
 ```console
-gh release download chirp-runner-v0.2.0 --repo thewh1teagle/chirp --pattern 'chirp-runner-darwin-arm64.tar.gz'
+wget https://github.com/thewh1teagle/chirp/releases/download/chirp-runner-v0.2.0/chirp-runner-darwin-arm64.tar.gz
 tar -xzf chirp-runner-darwin-arm64.tar.gz
 ```
 
 Download the models once:
 
 ```console
-gh release download chirp-models-v0.1.3 --repo thewh1teagle/chirp --pattern 'chirp-models-q5_0.tar.gz'
+wget https://github.com/thewh1teagle/chirp/releases/download/chirp-models-v0.1.3/chirp-models-q5_0.tar.gz
 mkdir -p models
 tar -xzf chirp-models-q5_0.tar.gz -C models
 ```
