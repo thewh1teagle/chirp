@@ -20,7 +20,7 @@ Release builds use accelerated backends by default: `metal` on macOS and
 Prepare local GGUF models under the ignored `models/` directory:
 
 ```bash
-huggingface-cli download Qwen/Qwen3-TTS-12Hz-0.6B-Base \
+uv run hf download Qwen/Qwen3-TTS-12Hz-0.6B-Base \
   --local-dir models/Qwen3-TTS-12Hz-0.6B-Base
 
 uv run --project chirp-c/scripts python chirp-c/scripts/convert_model_to_gguf.py \
