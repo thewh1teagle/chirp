@@ -136,7 +136,7 @@ function OnboardPage({
         <Card className="mt-7 flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <Eyebrow>One-time download</Eyebrow>
-            <strong className="block break-words text-[#171717]">{bundle?.version ?? "chirp-models-v0.1.1"}</strong>
+            <strong className="block break-words text-[#171717]">{bundle?.version ?? "chirp-models-v0.1.2"}</strong>
             <p className="mt-2 break-words text-sm text-[#68645c]">{bundle?.model_dir ?? "Stored in your app data folder"}</p>
           </div>
           <Button onClick={downloadModel} disabled={busy}>

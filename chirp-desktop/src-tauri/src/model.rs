@@ -7,13 +7,13 @@ use std::{
 use tauri::{Emitter, Manager};
 use tokio::io::AsyncWriteExt;
 
-const MODELS_TAG: &str = "chirp-models-v0.1.1";
+const MODELS_TAG: &str = "chirp-models-v0.1.2";
 const MODEL_ARCHIVE: &str = "chirp-models-q5_0.tar.gz";
 const MODEL_DIR: &str = "chirp-models-q5_0";
 const MODEL_FILE: &str = "qwen3-tts-model.gguf";
 const CODEC_FILE: &str = "qwen3-tts-codec.gguf";
 const MODEL_URL: &str =
-    "https://github.com/thewh1teagle/chirp/releases/download/chirp-models-v0.1.1/chirp-models-q5_0.tar.gz";
+    "https://github.com/thewh1teagle/chirp/releases/download/chirp-models-v0.1.2/chirp-models-q5_0.tar.gz";
 
 #[derive(Debug, Serialize)]
 pub struct ModelBundle {

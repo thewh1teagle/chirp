@@ -299,6 +299,18 @@ class Qwen3TTSTokenizerConverter:
             except Exception as e:
                 logger.warning(f"Q8_0 quantization failed for {tensor_name}: {e}, falling back to F16")
                 return data.astype(np.float16), gguf.GGMLQuantizationType.F16
+        elif self.output_type == "q5_0":
+            # Experimental: keep normalization/scalar tensors in higher precision.
+            if any(x in tensor_name for x in ["_norm", "norm.", "scale", "alpha", "beta"]):
+                return data.astype(np.float16), gguf.GGMLQuantizationType.F16
+
+            data = data.astype(np.float32)
+            try:
+                quantized = gguf.quants.quantize(data, gguf.GGMLQuantizationType.Q5_0)
+                return quantized, gguf.GGMLQuantizationType.Q5_0
+            except Exception as e:
+                logger.warning(f"Q5_0 quantization failed for {tensor_name}: {e}, falling back to F16")
+                return data.astype(np.float16), gguf.GGMLQuantizationType.F16
         else:
             return data.astype(np.float16), gguf.GGMLQuantizationType.F16
 
@@ -405,6 +417,8 @@ class Qwen3TTSTokenizerConverter:
             ftype = gguf.LlamaFileType.MOSTLY_F16
         elif self.output_type == "q8_0":
             ftype = gguf.LlamaFileType.MOSTLY_Q8_0
+        elif self.output_type == "q5_0":
+            ftype = gguf.LlamaFileType.MOSTLY_Q5_0
         else:
             ftype = gguf.LlamaFileType.MOSTLY_F16
         writer.add_file_type(ftype)
@@ -458,7 +472,7 @@ def main():
     )
     parser.add_argument(
         "--type", "-t",
-        choices=["f16", "f32", "q8_0"],
+        choices=["f16", "f32", "q8_0", "q5_0"],
         default="f16",
         help="Output data type (default: f16)"
     )

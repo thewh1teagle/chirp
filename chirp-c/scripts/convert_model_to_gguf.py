@@ -134,10 +134,12 @@ class Qwen3TTSConverter:
         input_dir: Path,
         output_path: Path,
         output_type: str = "f16",
+        quantize_all: bool = False,
     ):
         self.input_dir = input_dir
         self.output_path = output_path
         self.output_type = output_type
+        self.quantize_all = quantize_all
 
         # Load config
         self.config = self._load_config()
@@ -261,6 +263,9 @@ class Qwen3TTSConverter:
         - Biases
         - LM heads
         """
+        if self.quantize_all:
+            return True
+
         # Keep embeddings in F16
         if any(x in tensor_name for x in ["_embd", "codebook"]):
             return False
@@ -597,6 +602,11 @@ def main():
         action="store_true",
         help="Enable verbose logging"
     )
+    parser.add_argument(
+        "--quantize-all",
+        action="store_true",
+        help="Quantize every tensor with rank > 1 instead of keeping embeddings, heads, and other quality-sensitive tensors in F16."
+    )
 
     args = parser.parse_args()
 
@@ -607,6 +617,7 @@ def main():
         input_dir=args.input,
         output_path=args.output,
         output_type=args.type,
+        quantize_all=args.quantize_all,
     )
     converter.convert()
 

@@ -11,7 +11,7 @@ on:
       models_tag:
         description: "Model release tag to test"
         required: true
-        default: "chirp-models-v0.1.1"
+        default: "chirp-models-v0.1.2"
         type: string
 
 permissions:

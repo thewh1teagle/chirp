@@ -37,7 +37,7 @@ uv run --project chirp-c/scripts python chirp-c/scripts/convert_codec_to_gguf.py
 Or download packaged GGUF model bundles from a model release:
 
 ```console
-gh release download chirp-models-v0.1.1 \
+gh release download chirp-models-v0.1.2 \
   --pattern 'chirp-models-q5_0.tar.gz' \
   --dir dist
 

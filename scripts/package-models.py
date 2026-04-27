@@ -80,15 +80,17 @@ def package(quant: str, model: Path, codec: Path, out_dir: Path, version: str) -
 def main() -> None:
     parser = argparse.ArgumentParser(description="Package Qwen3-TTS GGUF model bundles")
     parser.add_argument("--quant", required=True, choices=["q8_0", "q5_0", "q4_k"])
-    parser.add_argument("--version", default="chirp-models-v0.1.1")
+    parser.add_argument("--version", default="chirp-models-v0.1.2")
     parser.add_argument("--models-dir", type=Path, default=MODELS_DIR)
+    parser.add_argument("--model", type=Path, help="Override AR model GGUF path")
+    parser.add_argument("--codec", type=Path, help="Override codec GGUF path")
     parser.add_argument("--out-dir", type=Path, default=ROOT / "dist")
     args = parser.parse_args()
 
     package(
         quant=args.quant,
-        model=args.models_dir / f"qwen3-tts-0.6b-{args.quant}.gguf",
-        codec=args.models_dir / "qwen3-tts-tokenizer-f16.gguf",
+        model=args.model or args.models_dir / f"qwen3-tts-0.6b-{args.quant}.gguf",
+        codec=args.codec or args.models_dir / "qwen3-tts-tokenizer-f16.gguf",
         out_dir=args.out_dir,
         version=args.version,
     )
