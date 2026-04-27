@@ -15,6 +15,13 @@
     },
     "dialog:default",
     "dialog:allow-open",
-    "opener:default"
+    "opener:default",
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        { "path": "$APPLOCALDATA/models" },
+        { "path": "$APPLOCALDATA/models/**" }
+      ]
+    }
   ]
 }

@@ -4,7 +4,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 use tokio::io::AsyncWriteExt;
 
 const MODELS_TAG: &str = "chirp-models-v0.1.1";
@@ -25,6 +25,14 @@ pub struct ModelBundle {
     pub url: String,
 }
 
+#[derive(Clone, Debug, Serialize)]
+struct ModelDownloadProgress {
+    downloaded: u64,
+    total: Option<u64>,
+    progress: Option<f64>,
+    stage: &'static str,
+}
+
 #[tauri::command]
 pub async fn get_model_bundle(app: tauri::AppHandle) -> Result<ModelBundle, String> {
     model_bundle(&app)
@@ -43,7 +51,16 @@ pub async fn download_model_bundle(app: tauri::AppHandle) -> Result<ModelBundle,
         .map_err(|err| format!("failed to create {}: {err}", models_root.display()))?;
 
     let archive_path = models_root.join(MODEL_ARCHIVE);
-    download_archive(&archive_path).await?;
+    download_archive(&app, &archive_path).await?;
+    emit_progress(
+        &app,
+        ModelDownloadProgress {
+            downloaded: 0,
+            total: None,
+            progress: None,
+            stage: "extracting",
+        },
+    );
     extract_archive(archive_path.clone(), models_root.clone()).await?;
     let _ = tokio::fs::remove_file(&archive_path).await;
 
@@ -81,7 +98,7 @@ fn model_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(models_root(app)?.join(MODEL_DIR))
 }
 
-async fn download_archive(dest: &Path) -> Result<(), String> {
+async fn download_archive(app: &tauri::AppHandle, dest: &Path) -> Result<(), String> {
     let part = dest.with_file_name(format!(
         "{}.part",
         dest.file_name()
@@ -104,15 +121,47 @@ async fn download_archive(dest: &Path) -> Result<(), String> {
         ));
     }
 
+    let total = response.content_length();
+    emit_progress(
+        app,
+        ModelDownloadProgress {
+            downloaded: 0,
+            total,
+            progress: Some(0.0),
+            stage: "downloading",
+        },
+    );
+
     let mut file = tokio::fs::File::create(&part)
         .await
         .map_err(|err| format!("failed to create {}: {err}", part.display()))?;
     let mut stream = response.bytes_stream();
+    let mut downloaded = 0_u64;
+    let mut last_progress = 0_u64;
     while let Some(chunk) = stream.next().await {
         let chunk = chunk.map_err(|err| format!("failed to read model download: {err}"))?;
+        downloaded += chunk.len() as u64;
         file.write_all(&chunk)
             .await
             .map_err(|err| format!("failed to write {}: {err}", part.display()))?;
+        let current_progress = total
+            .filter(|total| *total > 0)
+            .map(|total| downloaded.saturating_mul(100) / total)
+            .unwrap_or(0);
+        if current_progress != last_progress || total.is_none() {
+            last_progress = current_progress;
+            emit_progress(
+                app,
+                ModelDownloadProgress {
+                    downloaded,
+                    total,
+                    progress: total
+                        .filter(|total| *total > 0)
+                        .map(|total| downloaded as f64 / total as f64),
+                    stage: "downloading",
+                },
+            );
+        }
     }
     file.flush()
         .await
@@ -124,6 +173,10 @@ async fn download_archive(dest: &Path) -> Result<(), String> {
             dest.display()
         )
     })
+}
+
+fn emit_progress(app: &tauri::AppHandle, payload: ModelDownloadProgress) {
+    let _ = app.emit("model_download_progress", payload);
 }
 
 async fn extract_archive(archive_path: PathBuf, dest: PathBuf) -> Result<(), String> {
