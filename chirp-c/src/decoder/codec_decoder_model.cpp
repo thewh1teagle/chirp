@@ -254,11 +254,59 @@ bool AudioTokenizerDecoder::load_model(const std::string & model_path) {
         }
     }
     
-    if (!load_tensor_data_from_file(model_path, gguf_ctx, model_.ctx,
-                                     model_.tensors, model_.buffer, error_msg_,
-                                     GGML_BACKEND_DEVICE_TYPE_IGPU)) {
+    ggml_backend_t load_backend = init_preferred_backend("AudioTokenizerDecoder", &error_msg_);
+    if (!load_backend) {
         return false;
     }
+
+    model_.buffer = ggml_backend_alloc_ctx_tensors(model_.ctx, load_backend);
+    if (!model_.buffer) {
+        error_msg_ = "Failed to allocate decoder tensor buffer";
+        release_preferred_backend(load_backend);
+        return false;
+    }
+    ggml_backend_buffer_set_usage(model_.buffer, GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
+
+    FILE * f = fopen(model_path.c_str(), "rb");
+    if (!f) {
+        error_msg_ = "Failed to open file for reading: " + model_path;
+        release_preferred_backend(load_backend);
+        return false;
+    }
+
+    const size_t data_offset = gguf_get_data_offset(gguf_ctx);
+    std::map<std::string, std::vector<uint8_t>> tensor_data;
+
+    for (int64_t i = 0; i < n_tensors; ++i) {
+        const char * name = gguf_get_tensor_name(gguf_ctx, i);
+        size_t offset = gguf_get_tensor_offset(gguf_ctx, i);
+
+        auto it = model_.tensors.find(name);
+        if (it == model_.tensors.end()) {
+            continue;
+        }
+
+        struct ggml_tensor * tensor = it->second;
+        size_t nbytes = ggml_nbytes(tensor);
+        auto & data = tensor_data[name];
+        data.resize(nbytes);
+
+        if (fseek(f, data_offset + offset, SEEK_SET) != 0) {
+            error_msg_ = "Failed to seek to tensor data: " + std::string(name);
+            fclose(f);
+            release_preferred_backend(load_backend);
+            return false;
+        }
+
+        if (fread(data.data(), 1, nbytes, f) != nbytes) {
+            error_msg_ = "Failed to read tensor data: " + std::string(name);
+            fclose(f);
+            release_preferred_backend(load_backend);
+            return false;
+        }
+    }
+
+    fclose(f);
     
     for (int i = 0; i < 4; ++i) {
         model_.dec_blocks[i].res[0].dilation = 1;
@@ -266,19 +314,51 @@ bool AudioTokenizerDecoder::load_model(const std::string & model_path) {
         model_.dec_blocks[i].res[2].dilation = 9;
     }
     
-    normalize_codebooks();
-    // Codebooks are normalized in host memory; sync once to backend tensors.
-    auto upload_if_present = [](struct ggml_tensor * t) {
-        if (t && t->data) {
-            ggml_backend_tensor_set(t, t->data, 0, ggml_nbytes(t));
+    auto normalize_codebook_data = [&tensor_data](struct ggml_tensor * codebook, struct ggml_tensor * usage) {
+        if (!codebook || !usage) {
+            return;
+        }
+        auto cb_it = tensor_data.find(ggml_get_name(codebook));
+        auto usage_it = tensor_data.find(ggml_get_name(usage));
+        if (cb_it == tensor_data.end() || usage_it == tensor_data.end()) {
+            return;
+        }
+
+        const float epsilon = 1e-5f;
+        int64_t codebook_dim = codebook->ne[0];
+        int64_t codebook_size = codebook->ne[1];
+
+        ggml_fp16_t * cb_data = reinterpret_cast<ggml_fp16_t *>(cb_it->second.data());
+        const float * usage_data = reinterpret_cast<const float *>(usage_it->second.data());
+
+        for (int64_t emb_idx = 0; emb_idx < codebook_size; ++emb_idx) {
+            float u = usage_data[emb_idx];
+            if (u < epsilon) {
+                u = epsilon;
+            }
+            float inv_u = 1.0f / u;
+
+            for (int64_t dim_idx = 0; dim_idx < codebook_dim; ++dim_idx) {
+                int64_t mem_idx = dim_idx + emb_idx * codebook_dim;
+                float val = ggml_fp16_to_fp32(cb_data[mem_idx]);
+                cb_data[mem_idx] = ggml_fp32_to_fp16(val * inv_u);
+            }
         }
     };
-    upload_if_present(model_.vq_first_codebook);
+
+    normalize_codebook_data(model_.vq_first_codebook, model_.vq_first_usage);
     for (int i = 0; i < 15; ++i) {
-        upload_if_present(model_.vq_rest_codebook[i]);
+        normalize_codebook_data(model_.vq_rest_codebook[i], model_.vq_rest_usage[i]);
+    }
+
+    for (const auto & item : tensor_data) {
+        auto it = model_.tensors.find(item.first);
+        if (it != model_.tensors.end()) {
+            ggml_backend_tensor_set(it->second, item.second.data(), 0, item.second.size());
+        }
     }
     
-    state_.backend = init_preferred_backend("AudioTokenizerDecoder", &error_msg_);
+    state_.backend = load_backend;
     if (!state_.backend) {
         return false;
     }
