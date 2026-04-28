@@ -1,3 +1,4 @@
+mod files;
 mod model;
 mod runner;
 
@@ -17,6 +18,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             greet,
+            files::reveal_path,
             model::get_model_bundle,
             model::download_model_bundle,
             runner::start_runner,
@@ -25,6 +27,7 @@ pub fn run() {
             runner::load_model,
             runner::get_languages,
             runner::synthesize,
+            runner::copy_audio_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

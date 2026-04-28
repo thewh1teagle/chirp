@@ -11,12 +11,13 @@ import {
   FolderOpen,
   Languages,
   Loader2,
+  Pause,
   Play,
   Plus,
   Settings,
   Sparkles,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { CreateStep, DownloadProgress, ModelBundle, RunnerInfo } from "../types";
 import { cn, formatBytes, sampleText } from "../utils";
@@ -60,61 +61,78 @@ export function OnboardPage({ bundle, setBundle }: PageProps) {
   }
 
   const progressValue = Math.round((progress?.progress ?? 0) * 100);
-  const stageLabel = progress?.stage === "extracting" ? "Finishing setup..." : "Downloading voice model...";
+  const hasProgressPercent = typeof progress?.progress === "number";
+  const progressLabel = hasProgressPercent
+    ? `${progressValue}%`
+    : progress?.downloaded
+      ? formatBytes(progress.downloaded)
+      : "Starting";
+  const stageLabel = progress?.stage === "extracting" ? "Optimizing models..." : "Downloading voice model...";
 
   return (
     <main className="grid min-h-screen place-items-center bg-background p-6 text-primary sm:p-12">
-      <section className="w-full max-w-[640px]">
-        <Brand />
-        <h1 className="mt-8 text-4xl font-semibold tracking-tight text-primary sm:text-6xl">
-          Local voice <br />
-          <span className="text-secondary">reimagined.</span>
-        </h1>
-        <p className="mt-6 max-w-[540px] text-lg leading-relaxed text-secondary sm:text-xl">
-          Chirp brings professional speech synthesis to your device. The model stays local, ensuring speed and total privacy.
-        </p>
+      <section className="w-full max-w-[580px]">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          <Brand />
+          <h1 className="mt-8 text-4xl font-semibold tracking-tight text-primary sm:text-5xl">
+            Local voice <br />
+            <span className="text-secondary opacity-40 italic">reimagined.</span>
+          </h1>
+          <p className="mt-6 max-w-[480px] text-lg leading-relaxed text-secondary opacity-70">
+            A professional-grade voice engine that runs entirely on your hardware. Total privacy, zero latency.
+          </p>
 
-        <Card className="mt-12 overflow-hidden border-none bg-surface shadow-2xl">
-          <div className="flex flex-col gap-6 p-8 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <Eyebrow>One-time setup</Eyebrow>
-              <h3 className="text-lg font-semibold">{bundle?.version ?? "chirp-models-v0.1.3"}</h3>
-              <p className="text-sm text-secondary opacity-80">Requires ~1.3GB of disk space</p>
-            </div>
-            <Button onClick={downloadModel} disabled={busy} className="h-14 px-8 text-base">
-              {busy ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Downloading
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  Install Model
-                </span>
-              )}
-            </Button>
-          </div>
-
-          {(busy || progress) && (
-            <div className="border-t border-border/40 bg-background/50 p-8">
-              <div className="mb-4 flex items-center justify-between text-sm font-semibold">
-                <span className="flex items-center gap-2">
-                  {progress?.stage === "extracting" ? <Sparkles className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-                  {stageLabel}
-                </span>
-                <span className="font-mono">{progressValue}%</span>
+          <Card className="mt-12 overflow-hidden border-none bg-white p-0 shadow-2xl">
+            <div className="flex flex-col gap-8 p-8 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <Eyebrow>Local Infrastructure</Eyebrow>
+                <h3 className="text-base font-semibold tracking-tight">{bundle?.version ?? "chirp-v0.1.3-standard"}</h3>
+                <p className="text-xs text-secondary opacity-40">Initial setup: ~1.3GB storage</p>
               </div>
-              <Progress value={progress?.stage === "extracting" ? 100 : progressValue} />
-              <div className="mt-4 flex items-center justify-between text-xs font-medium text-secondary">
-                <span>{progress?.total ? `${formatBytes(progress.downloaded)} of ${formatBytes(progress.total)}` : "Calculating..."}</span>
-                {progress?.stage === "downloading" && <span className="animate-pulse">Active Download</span>}
-              </div>
+              <Button onClick={downloadModel} disabled={busy} className="h-12 px-8 text-sm shadow-lg shadow-primary/5">
+                {busy ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Preparing...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    Install Models
+                  </span>
+                )}
+              </Button>
             </div>
-          )}
-        </Card>
 
-        {error && <ErrorBlock className="mt-6">{error}</ErrorBlock>}
+            {(busy || progress) && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="border-t border-border/10 bg-background/30 p-8"
+              >
+                <div className="mb-4 flex items-center justify-between text-[11px] font-bold uppercase tracking-widest">
+                  <span className="flex items-center gap-2 text-primary">
+                    {progress?.stage === "extracting" ? <Sparkles className="h-3.5 w-3.5" /> : <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    {stageLabel}
+                  </span>
+                  <span className="font-mono text-base">{progressLabel}</span>
+                </div>
+                <Progress value={progress?.stage === "extracting" ? 100 : hasProgressPercent ? progressValue : 8} />
+                {progress?.downloaded ? (
+                  <p className="mt-3 text-xs font-medium text-secondary opacity-50">
+                    {progress.total ? `${formatBytes(progress.downloaded)} of ${formatBytes(progress.total)}` : `${formatBytes(progress.downloaded)} downloaded`}
+                  </p>
+                ) : null}
+              </motion.div>
+            )}
+          </Card>
+        </motion.div>
+
+        {error && <ErrorBlock className="mt-8">{error}</ErrorBlock>}
       </section>
     </main>
   );
@@ -128,7 +146,7 @@ export function HomePage({ bundle, setBundle }: PageProps) {
   const [language, setLanguage] = useState("auto");
   const [audioPath, setAudioPath] = useState("");
   const [step, setStep] = useState<CreateStep>("idle");
-  const [status, setStatus] = useState("Ready to create.");
+  const [status, setStatus] = useState("Ready to generate.");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -150,7 +168,7 @@ export function HomePage({ bundle, setBundle }: PageProps) {
       return;
     }
     if (!text.trim()) {
-      setStatus("Add text before creating audio.");
+      setStatus("Input text required.");
       return;
     }
 
@@ -159,11 +177,11 @@ export function HomePage({ bundle, setBundle }: PageProps) {
     setAudioPath("");
     try {
       setStep("starting");
-      setStatus("Initializing...");
+      setStatus("Initializing Engine...");
       await invoke<RunnerInfo>("start_runner");
 
       setStep("loading");
-      setStatus("Loading weights...");
+      setStatus("Loading models...");
       await invoke("load_model", {
         request: {
           model_path: current.model_path,
@@ -179,7 +197,7 @@ export function HomePage({ bundle, setBundle }: PageProps) {
       if (selectedLanguage !== language) setLanguage("auto");
 
       setStep("creating");
-      setStatus("Generating speech...");
+      setStatus("Generating audio...");
       const output = await invoke<string>("synthesize", {
         request: {
           input: text,
@@ -193,7 +211,7 @@ export function HomePage({ bundle, setBundle }: PageProps) {
     } catch (err) {
       setStep("idle");
       setError(String(err));
-      setStatus("Failed to generate.");
+      setStatus("Generation failed.");
     } finally {
       setBusy(false);
     }
@@ -201,23 +219,27 @@ export function HomePage({ bundle, setBundle }: PageProps) {
 
   return (
     <AppFrame bundle={bundle}>
-      <div className="w-full max-w-[1040px] space-y-8">
+      <div className="w-full max-w-[1200px] space-y-10">
         <StudioHeader bundle={bundle} />
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          <div className="space-y-6">
+        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+          <div className="space-y-8">
             <EditorCard busy={busy} text={text} setText={setText} createVoice={createVoice} />
 
             <AnimatePresence>
               {audioPath && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
-                  <WaveformPlayer src={audioSrc} filename={audioPath.split(/[\\/]/).pop() || "preview.wav"} />
+                <motion.div 
+                  initial={{ opacity: 0, y: 12 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  exit={{ opacity: 0, y: 8 }}
+                >
+                  <WaveformPlayer src={audioSrc} sourcePath={audioPath} filename={audioPath.split(/[\\/]/).pop() || "generated-audio.wav"} />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          <aside className="space-y-6">
+          <aside className="space-y-8">
             <VoiceSettings
               busy={busy}
               language={language}
@@ -228,7 +250,17 @@ export function HomePage({ bundle, setBundle }: PageProps) {
               setReferencePath={setReferencePath}
             />
 
-            {busy && <CreateStatus step={step} status={status} />}
+            <AnimatePresence>
+              {busy && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                >
+                  <CreateStatus step={step} status={status} />
+                </motion.div>
+              )}
+            </AnimatePresence>
             {error && <ErrorBlock className="mt-0">{error}</ErrorBlock>}
           </aside>
         </div>
@@ -252,39 +284,43 @@ export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
 
   return (
     <AppFrame bundle={bundle}>
-      <section className="w-full max-w-[680px] space-y-12">
-        <header className="space-y-4">
-          <Link to="/home" className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-60 transition-colors hover:text-primary hover:opacity-100">
+      <section className="w-full max-w-[640px] space-y-12">
+        <header className="space-y-6">
+          <Link to="/home" className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-secondary opacity-40 transition-all hover:text-primary hover:opacity-100">
             <ChevronRight className="h-3 w-3 rotate-180" />
             Studio
           </Link>
-          <h1 className="text-4xl font-semibold tracking-tight text-primary sm:text-5xl">Settings</h1>
-          <p className="max-w-[480px] text-lg text-secondary opacity-80">Configure your local voice synthesis engine and manage model storage.</p>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">System Settings</h1>
+            <p className="max-w-[440px] text-base text-secondary opacity-60">Manage local models and high-fidelity voice assets.</p>
+          </div>
         </header>
 
-        <div className="space-y-6">
-          <div className="space-y-3">
-            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-40">Model Management</h3>
-            <Card className="divide-y divide-border/30 overflow-hidden border-border/60 shadow-md rounded-xl">
-              <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-8">
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-30">Infrastructure & Storage</h3>
+            <Card className="divide-y divide-border/20 overflow-hidden border-none shadow-xl">
+              <div className="flex flex-col gap-8 p-8 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 flex-1 space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-secondary opacity-40">Storage Location</p>
-                  <p className="font-mono text-[11px] text-secondary/80 truncate">{bundle?.model_dir ?? "Locating model directory..."}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Models Directory</p>
+                  <p className="font-mono text-[11px] text-secondary/70 bg-background/50 px-3 py-2 rounded-lg border border-border/10 truncate">
+                    {bundle?.model_dir ?? "Resolving system path..."}
+                  </p>
                 </div>
-                <Button variant="outline" onClick={openModelsFolder} className="gap-2 h-9 px-4 shrink-0 text-xs">
-                  <FolderOpen className="h-3.5 w-3.5" />
-                  Open Folder
+                <Button variant="outline" onClick={openModelsFolder} className="gap-2 h-10 px-4 shrink-0 text-xs">
+                  <FolderOpen className="h-4 w-4" />
+                  Open Models Folder
                 </Button>
               </div>
 
-              <div className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center sm:justify-between bg-background/30">
+              <div className="flex flex-col gap-8 p-8 sm:flex-row sm:items-center sm:justify-between bg-background/10">
                 <div className="space-y-0.5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-secondary opacity-40">Active Model</p>
-                  <p className="text-lg font-semibold tracking-tight">{bundle?.version ?? "v0.1.3"}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Engine Specification</p>
+                  <p className="text-xl font-semibold tracking-tight text-primary">{bundle?.version ?? "v0.1.3-standard"}</p>
                 </div>
-                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white border border-border/50 text-[9px] font-bold uppercase tracking-[0.15em] text-green-600 shadow-sm">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-border/40 text-[9px] font-black uppercase tracking-[0.2em] text-green-600 shadow-sm">
                   <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                  Latest
+                  Live System
                 </div>
               </div>
             </Card>
@@ -302,23 +338,48 @@ function StudioHeader({ bundle }: { bundle: ModelBundle | null }) {
     <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
       <div className="space-y-3">
         <div className="flex items-center gap-3">
-          <Brand className="h-7 min-w-[60px] text-[11px]" />
-          <div className="h-1 w-1 rounded-full bg-border" />
-          <span className="text-xs font-bold uppercase tracking-widest text-secondary opacity-60">Studio</span>
+          <Brand />
+          <div className="h-1 w-1 rounded-full bg-border/40" />
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary opacity-30">Production Studio</span>
         </div>
-        <h1 className="text-4xl font-semibold tracking-tight text-primary sm:text-5xl">Speech Synthesis</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">Speech Studio</h1>
       </div>
       <div className="flex items-center gap-4">
-        <div className="hidden text-right sm:block">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-secondary opacity-50">Local Engine</p>
-          <p className="text-sm font-medium">{bundle?.version.split("-").pop() ?? "v0.1.3"}</p>
+        <div className="hidden text-right sm:block space-y-0.5">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">System Status</p>
+          <p className="text-sm font-semibold text-primary">{bundle?.version.split("-").pop() ?? "v0.1.3"}</p>
         </div>
-        <div className="h-10 w-[1px] bg-border/60" />
-        <Link to="/settings" className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface text-secondary transition-colors hover:border-primary hover:text-primary">
-          <Settings className="h-5 w-5" />
+        <div className="h-10 w-[1px] bg-border/20" />
+        <Link to="/settings" className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white text-secondary transition-all hover:border-primary hover:text-primary hover:scale-105 shadow-sm">
+          <Settings className="h-4 w-4" />
         </Link>
       </div>
     </header>
+  );
+}
+
+function ReferencePlayer({ src }: { src: string }) {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const togglePlay = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (!audioRef.current) return;
+    if (isPlaying) audioRef.current.pause();
+    else audioRef.current.play();
+    setIsPlaying(!isPlaying);
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <audio ref={audioRef} src={src} onEnded={() => setIsPlaying(false)} />
+      <button
+        onClick={togglePlay}
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white transition-all hover:scale-110 active:scale-90 shadow-lg shadow-primary/10 cursor-pointer"
+      >
+        {isPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
+      </button>
+    </div>
   );
 }
 
@@ -334,24 +395,24 @@ function EditorCard({
   createVoice: () => void;
 }) {
   return (
-    <Card className="relative overflow-hidden p-0 shadow-xl">
+    <Card className="relative overflow-hidden p-0 shadow-xl border-none">
       <textarea
         id="text"
         value={text}
-        placeholder="Enter text to synthesize..."
+        placeholder="Paste your script here..."
         onChange={(event) => setText(event.currentTarget.value)}
         disabled={busy}
-        className="min-h-[320px] w-full resize-none bg-surface p-8 text-xl leading-relaxed text-primary outline-none placeholder:text-secondary/30"
+        className="min-h-[320px] w-full resize-none bg-white p-8 text-lg leading-relaxed text-primary outline-none placeholder:text-secondary/20 font-medium"
       />
-      <div className="flex items-center justify-between border-t border-border/40 bg-background/30 px-6 py-4">
-        <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-secondary opacity-60">
-          <span className={cn(text.length > 500 ? "text-amber-600" : "")}>{text.length} Characters</span>
+      <div className="flex items-center justify-between border-t border-border/10 bg-background/10 px-8 py-5">
+        <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-40">
+          <span className={cn("transition-colors", text.length > 500 ? "text-amber-600 opacity-100" : "")}>{text.length} Characters</span>
         </div>
-        <Button onClick={createVoice} disabled={busy || !text.trim()} className="h-11 px-6 text-sm">
+        <Button onClick={createVoice} disabled={busy || !text.trim()} className="h-12 px-8 text-sm shadow-xl shadow-primary/5 transition-transform hover:scale-[1.01]">
           {busy ? (
             <span className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Creating
+                  Generating...
             </span>
           ) : (
             <span className="flex items-center gap-2">
@@ -382,60 +443,72 @@ function VoiceSettings({
   setLanguage: (language: string) => void;
   setReferencePath: (path: string) => void;
 }) {
+  const referenceSrc = useMemo(() => (referencePath ? convertFileSrc(referencePath) : ""), [referencePath]);
+
   return (
-    <Card className="space-y-6 p-6">
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <AudioLines className="h-4 w-4 text-secondary" />
-          <Eyebrow className="mb-0">Voice Clone</Eyebrow>
+    <Card className="space-y-8 p-6 border-none shadow-xl">
+      <div className="space-y-5">
+        <div className="flex items-center gap-2.5">
+          <AudioLines className="h-4 w-4 text-secondary opacity-40" />
+          <Eyebrow className="mb-0">Voice Cloning</Eyebrow>
         </div>
         <div
           className={cn(
-            "group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-all hover:bg-background",
-            referencePath ? "border-primary bg-background" : "border-border hover:border-secondary",
+            "group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-all hover:bg-background/40",
+            referencePath ? "border-primary bg-background/20" : "border-border/60 hover:border-secondary/30",
           )}
           onClick={chooseReference}
         >
           {referencePath ? (
-            <div className="text-center">
-              <FileAudio className="mx-auto mb-2 h-8 w-8 text-primary" />
-              <p className="max-w-[180px] truncate text-sm font-semibold">{referencePath.split(/[\\/]/).pop()}</p>
+            <div className="text-center w-full space-y-3">
+              <div className="flex justify-between items-center px-1">
+                <div className="invisible h-9 w-9" />
+                <div className="flex-1 flex flex-col items-center">
+                  <div className="h-12 w-12 bg-white rounded-xl shadow-lg flex items-center justify-center mb-3 border border-border/10">
+                    <FileAudio className="h-6 w-6 text-primary" />
+                  </div>
+                  <p className="max-w-[160px] truncate text-xs font-bold tracking-tight text-primary">{referencePath.split(/[\\/]/).pop()}</p>
+                </div>
+                {referenceSrc && <ReferencePlayer src={referenceSrc} />}
+              </div>
               <button
                 onClick={(event) => {
                   event.stopPropagation();
                   setReferencePath("");
                 }}
-                className="mt-2 text-xs font-bold text-secondary hover:text-primary"
+                className="text-[9px] font-black uppercase tracking-[0.2em] text-secondary opacity-30 hover:text-primary transition-all cursor-pointer"
               >
-                Remove
+                Clear
               </button>
             </div>
           ) : (
-            <div className="text-center">
-              <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-background group-hover:bg-surface">
-                <Plus className="h-5 w-5 text-secondary" />
+            <div className="text-center space-y-3">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-lg transition-transform group-hover:scale-105 border border-border/10">
+                <Plus className="h-5 w-5 text-secondary opacity-30" />
               </div>
-              <p className="text-sm font-medium text-secondary">Add reference WAV</p>
-              <p className="mt-1 text-[10px] text-secondary/50">Clone any voice</p>
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold tracking-tight text-primary">Upload WAV</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Clone any voice</p>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="h-[1px] bg-border/40" />
+      <div className="h-[1px] bg-border/10" />
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Languages className="h-4 w-4 text-secondary" />
+      <div className="space-y-5">
+        <div className="flex items-center gap-2.5">
+          <Languages className="h-4 w-4 text-secondary opacity-40" />
           <Eyebrow className="mb-0">Language</Eyebrow>
         </div>
-        <div className="relative">
+        <div className="relative group">
           <select
             id="language"
             value={language}
             onChange={(event) => setLanguage(event.currentTarget.value)}
             disabled={busy}
-            className="h-12 w-full appearance-none rounded-xl border border-border bg-surface px-4 text-sm font-medium outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/5"
+            className="h-12 w-full appearance-none rounded-xl border border-border/30 bg-white px-4 text-xs font-bold tracking-tight text-primary outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/5 cursor-pointer shadow-sm group-hover:shadow-md"
           >
             {languages.map((item) => (
               <option key={item} value={item}>
@@ -443,8 +516,8 @@ function VoiceSettings({
               </option>
             ))}
           </select>
-          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 opacity-40">
-            <ChevronRight className="h-4 w-4 rotate-90" />
+          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 opacity-20 group-hover:opacity-60 transition-opacity">
+            <ChevronRight className="h-3.5 w-3.5 rotate-90" />
           </div>
         </div>
       </div>

@@ -305,6 +305,39 @@ pub async fn synthesize(
     Ok(output_path)
 }
 
+#[tauri::command]
+pub async fn copy_audio_file(source_path: String, destination_path: String) -> Result<(), String> {
+    if source_path.trim().is_empty() {
+        return Err("source audio path is empty".to_string());
+    }
+    if destination_path.trim().is_empty() {
+        return Err("destination audio path is empty".to_string());
+    }
+
+    let source = PathBuf::from(source_path);
+    if !source.is_file() {
+        return Err(format!("source audio file does not exist: {}", source.display()));
+    }
+
+    let destination = PathBuf::from(destination_path);
+    if let Some(parent) = destination.parent() {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|err| format!("failed to create destination folder {}: {err}", parent.display()))?;
+    }
+
+    tokio::fs::copy(&source, &destination)
+        .await
+        .map_err(|err| {
+            format!(
+                "failed to copy audio from {} to {}: {err}",
+                source.display(),
+                destination.display()
+            )
+        })?;
+    Ok(())
+}
+
 fn ensure_runner(app: &tauri::AppHandle, state: &State<'_, RunnerState>) -> Result<String, String> {
     let mut guard = state
         .process

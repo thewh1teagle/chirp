@@ -1,19 +1,16 @@
 use futures_util::StreamExt;
 use serde::Serialize;
 use std::{
-    fs,
     path::{Path, PathBuf},
 };
 use tauri::{Emitter, Manager};
 use tokio::io::AsyncWriteExt;
 
 const MODELS_TAG: &str = "chirp-models-v0.1.3";
-const MODEL_ARCHIVE: &str = "chirp-models-q5_0.tar.gz";
 const MODEL_DIR: &str = "chirp-models-q5_0";
 const MODEL_FILE: &str = "qwen3-tts-model.gguf";
 const CODEC_FILE: &str = "qwen3-tts-codec.gguf";
-const MODEL_URL: &str =
-    "https://github.com/thewh1teagle/chirp/releases/download/chirp-models-v0.1.3/chirp-models-q5_0.tar.gz";
+const MODEL_BASE_URL: &str = "https://huggingface.co/thewh1teagle/qwen3-tts-gguf/resolve/main";
 
 #[derive(Debug, Serialize)]
 pub struct ModelBundle {
@@ -49,24 +46,45 @@ pub async fn download_model_bundle(app: tauri::AppHandle) -> Result<ModelBundle,
     tokio::fs::create_dir_all(&models_root)
         .await
         .map_err(|err| format!("failed to create {}: {err}", models_root.display()))?;
+    let dir = model_dir(&app)?;
+    tokio::fs::create_dir_all(&dir)
+        .await
+        .map_err(|err| format!("failed to create {}: {err}", dir.display()))?;
 
-    let archive_path = models_root.join(MODEL_ARCHIVE);
-    download_archive(&app, &archive_path).await?;
-    emit_progress(
+    let client = reqwest::Client::builder()
+        .no_proxy()
+        .build()
+        .map_err(|err| format!("failed to build HTTP client: {err}"))?;
+    let mut downloaded = 0_u64;
+    let model_total = remote_content_length(&client, &model_file_url(MODEL_FILE)).await;
+    let codec_total = remote_content_length(&client, &model_file_url(CODEC_FILE)).await;
+    let total = match (model_total, codec_total) {
+        (Some(model), Some(codec)) => Some(model + codec),
+        _ => None,
+    };
+
+    download_model_file(
         &app,
-        ModelDownloadProgress {
-            downloaded: 0,
-            total: None,
-            progress: None,
-            stage: "extracting",
-        },
-    );
-    extract_archive(archive_path.clone(), models_root.clone()).await?;
-    let _ = tokio::fs::remove_file(&archive_path).await;
+        &client,
+        &model_file_url(MODEL_FILE),
+        &dir.join(MODEL_FILE),
+        &mut downloaded,
+        total,
+    )
+    .await?;
+    download_model_file(
+        &app,
+        &client,
+        &model_file_url(CODEC_FILE),
+        &dir.join(CODEC_FILE),
+        &mut downloaded,
+        total,
+    )
+    .await?;
 
     let bundle = model_bundle(&app)?;
     if !bundle.installed {
-        return Err("model archive extracted, but expected GGUF files were not found".to_string());
+        return Err("model files downloaded, but expected GGUF files were not found".to_string());
     }
     Ok(bundle)
 }
@@ -81,7 +99,7 @@ fn model_bundle(app: &tauri::AppHandle) -> Result<ModelBundle, String> {
         codec_path: path_string(&codec_path),
         model_dir: path_string(&dir),
         version: MODELS_TAG.to_string(),
-        url: MODEL_URL.to_string(),
+        url: MODEL_BASE_URL.to_string(),
     })
 }
 
@@ -98,36 +116,62 @@ fn model_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     Ok(models_root(app)?.join(MODEL_DIR))
 }
 
-async fn download_archive(app: &tauri::AppHandle, dest: &Path) -> Result<(), String> {
+async fn remote_content_length(client: &reqwest::Client, url: &str) -> Option<u64> {
+    client
+        .head(url)
+        .send()
+        .await
+        .ok()
+        .filter(|response| response.status().is_success())
+        .and_then(|response| response_content_length(&response))
+}
+
+fn response_content_length(response: &reqwest::Response) -> Option<u64> {
+    response.content_length().or_else(|| {
+        response
+            .headers()
+            .get("x-linked-size")
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.parse::<u64>().ok())
+    })
+}
+
+async fn download_model_file(
+    app: &tauri::AppHandle,
+    client: &reqwest::Client,
+    url: &str,
+    dest: &Path,
+    downloaded: &mut u64,
+    total: Option<u64>,
+) -> Result<(), String> {
     let part = dest.with_file_name(format!(
         "{}.part",
         dest.file_name()
             .and_then(|name| name.to_str())
-            .unwrap_or(MODEL_ARCHIVE)
+            .unwrap_or("model.gguf")
     ));
-    let response = reqwest::Client::builder()
-        .no_proxy()
-        .build()
-        .map_err(|err| format!("failed to build HTTP client: {err}"))?
-        .get(MODEL_URL)
+    let response = client
+        .get(url)
         .send()
         .await
-        .map_err(|err| format!("failed to download model bundle: {err}"))?;
+        .map_err(|err| format!("failed to download model file {url}: {err}"))?;
 
     if !response.status().is_success() {
         return Err(format!(
-            "model bundle download failed: {}",
-            response.status()
+            "model file download failed for {url}: {}",
+            response.status(),
         ));
     }
 
-    let total = response.content_length();
+    let fallback_file_total = response_content_length(&response);
     emit_progress(
         app,
         ModelDownloadProgress {
-            downloaded: 0,
+            downloaded: *downloaded,
             total,
-            progress: Some(0.0),
+            progress: total
+                .filter(|total| *total > 0)
+                .map(|total| *downloaded as f64 / total as f64),
             stage: "downloading",
         },
     );
@@ -136,32 +180,24 @@ async fn download_archive(app: &tauri::AppHandle, dest: &Path) -> Result<(), Str
         .await
         .map_err(|err| format!("failed to create {}: {err}", part.display()))?;
     let mut stream = response.bytes_stream();
-    let mut downloaded = 0_u64;
-    let mut last_progress = 0_u64;
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|err| format!("failed to read model download: {err}"))?;
-        downloaded += chunk.len() as u64;
+        let chunk = chunk.map_err(|err| format!("failed to read model download from {url}: {err}"))?;
+        *downloaded += chunk.len() as u64;
         file.write_all(&chunk)
             .await
             .map_err(|err| format!("failed to write {}: {err}", part.display()))?;
-        let current_progress = total
-            .filter(|total| *total > 0)
-            .map(|total| downloaded.saturating_mul(100) / total)
-            .unwrap_or(0);
-        if current_progress != last_progress || total.is_none() {
-            last_progress = current_progress;
-            emit_progress(
-                app,
-                ModelDownloadProgress {
-                    downloaded,
-                    total,
-                    progress: total
-                        .filter(|total| *total > 0)
-                        .map(|total| downloaded as f64 / total as f64),
-                    stage: "downloading",
-                },
-            );
-        }
+        let progress_total = total.or(fallback_file_total);
+        emit_progress(
+            app,
+            ModelDownloadProgress {
+                downloaded: *downloaded,
+                total: progress_total,
+                progress: progress_total
+                    .filter(|total| *total > 0)
+                    .map(|total| *downloaded as f64 / total as f64),
+                stage: "downloading",
+            },
+        );
     }
     file.flush()
         .await
@@ -175,50 +211,12 @@ async fn download_archive(app: &tauri::AppHandle, dest: &Path) -> Result<(), Str
     })
 }
 
+fn model_file_url(file_name: &str) -> String {
+    format!("{MODEL_BASE_URL}/{file_name}")
+}
+
 fn emit_progress(app: &tauri::AppHandle, payload: ModelDownloadProgress) {
     let _ = app.emit("model_download_progress", payload);
-}
-
-async fn extract_archive(archive_path: PathBuf, dest: PathBuf) -> Result<(), String> {
-    tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
-        let file = fs::File::open(&archive_path)
-            .map_err(|err| format!("failed to open {}: {err}", archive_path.display()))?;
-        let decoder = flate2::read::GzDecoder::new(file);
-        let mut archive = tar::Archive::new(decoder);
-        for entry in archive
-            .entries()
-            .map_err(|err| format!("failed to read model archive: {err}"))?
-        {
-            let mut entry =
-                entry.map_err(|err| format!("failed to read model archive entry: {err}"))?;
-            let entry_path = entry
-                .path()
-                .map_err(|err| format!("failed to read archive path: {err}"))?;
-            let out_path = safe_join(&dest, &entry_path)?;
-            if let Some(parent) = out_path.parent() {
-                fs::create_dir_all(parent)
-                    .map_err(|err| format!("failed to create {}: {err}", parent.display()))?;
-            }
-            entry
-                .unpack(&out_path)
-                .map_err(|err| format!("failed to extract {}: {err}", out_path.display()))?;
-        }
-        Ok(())
-    })
-    .await
-    .map_err(|err| format!("failed to join extraction task: {err}"))?
-}
-
-fn safe_join(base: &Path, relative: &Path) -> Result<PathBuf, String> {
-    let mut out = base.to_path_buf();
-    for component in relative.components() {
-        match component {
-            std::path::Component::Normal(part) => out.push(part),
-            std::path::Component::CurDir => {}
-            _ => return Err("model archive contains an unsafe path".to_string()),
-        }
-    }
-    Ok(out)
 }
 
 fn path_string(path: &Path) -> String {

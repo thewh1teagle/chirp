@@ -6,8 +6,8 @@ import { Card } from "./ui";
 export function CreateStatus({ step, status }: { step: CreateStep; status: string }) {
   const steps: Array<[CreateStep, string]> = [
     ["starting", "Initializing"],
-    ["loading", "Loading Weights"],
-    ["creating", "Synthesizing"],
+    ["loading", "Loading Models"],
+    ["creating", "Generating"],
   ];
   const activeIndex = steps.findIndex(([key]) => key === step);
 
