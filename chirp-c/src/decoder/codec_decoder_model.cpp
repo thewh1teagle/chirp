@@ -4,8 +4,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <numeric>
+#include <string>
 
 #define QWEN3_TTS_DEC_MAX_NODES 32768
 
@@ -254,7 +256,28 @@ bool AudioTokenizerDecoder::load_model(const std::string & model_path) {
         }
     }
     
+#if defined(__APPLE__)
+    ggml_backend_t load_backend = nullptr;
+    // Keep the codec decoder off Metal by default on macOS: this graph can
+    // monopolize the shared GPU and make WindowServer visibly unresponsive.
+    const char * decoder_backend_env = std::getenv("QWEN3_TTS_DECODER_BACKEND");
+    const bool use_preferred_decoder_backend =
+        decoder_backend_env && decoder_backend_env[0] != '\0' &&
+        (std::string(decoder_backend_env) == "preferred" ||
+         std::string(decoder_backend_env) == "gpu" ||
+         std::string(decoder_backend_env) == "metal");
+
+    if (use_preferred_decoder_backend) {
+        load_backend = init_preferred_backend("AudioTokenizerDecoder", &error_msg_);
+    } else {
+        load_backend = ggml_backend_init_by_type(GGML_BACKEND_DEVICE_TYPE_CPU, nullptr);
+        if (!load_backend) {
+            error_msg_ = "Failed to initialize CPU backend for AudioTokenizerDecoder";
+        }
+    }
+#else
     ggml_backend_t load_backend = init_preferred_backend("AudioTokenizerDecoder", &error_msg_);
+#endif
     if (!load_backend) {
         return false;
     }
