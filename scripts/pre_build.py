@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import os
 import platform
 import tarfile
@@ -40,6 +41,41 @@ def download(url: str, token: str | None = None) -> bytes:
         request.add_header("X-GitHub-Api-Version", "2022-11-28")
     with urllib.request.urlopen(request, timeout=120) as response:
         return response.read()
+
+
+def github_json(url: str, token: str | None = None) -> object:
+    request = urllib.request.Request(url)
+    request.add_header("Accept", "application/vnd.github+json")
+    request.add_header("X-GitHub-Api-Version", "2022-11-28")
+    if token:
+        request.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(request, timeout=120) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def download_release_asset(repo: str, tag: str, asset_name: str, token: str | None = None) -> bytes:
+    if token:
+        release_url = f"https://api.github.com/repos/{repo}/releases/tags/{tag}"
+        release = github_json(release_url, token)
+        if not isinstance(release, dict):
+            raise RuntimeError(f"Unexpected GitHub release response for {tag}")
+        assets = release.get("assets", [])
+        if not isinstance(assets, list):
+            raise RuntimeError(f"Unexpected GitHub assets response for {tag}")
+        for asset in assets:
+            if isinstance(asset, dict) and asset.get("name") == asset_name:
+                asset_url = asset.get("url")
+                if not isinstance(asset_url, str):
+                    raise RuntimeError(f"Asset {asset_name} is missing an API URL")
+                return download(asset_url, token)
+        available = ", ".join(
+            asset.get("name", "<unnamed>")
+            for asset in assets
+            if isinstance(asset, dict)
+        )
+        raise RuntimeError(f"Release asset {asset_name} not found in {tag}. Available assets: {available}")
+
+    return download(f"https://github.com/{repo}/releases/download/{tag}/{asset_name}")
 
 
 def extract_member(data: bytes, archive_name: str, member_name: str) -> bytes:
@@ -92,7 +128,12 @@ def main() -> int:
 
     url = f"https://github.com/{args.repo}/releases/download/{tag}/{archive_name}"
     print(f"Downloading {url}")
-    data = download(url, os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN"))
+    data = download_release_asset(
+        args.repo,
+        tag,
+        archive_name,
+        os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN"),
+    )
     binary = extract_member(data, archive_name, member_name)
 
     dest_dir.mkdir(parents=True, exist_ok=True)
