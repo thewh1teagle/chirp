@@ -33,9 +33,15 @@ def github_json(url: str) -> dict:
         return json.loads(res.read().decode("utf-8"))
 
 
-def download(url: str, dest: Path) -> None:
+def download(url: str, dest: Path, token: str | None = None) -> None:
     print(f"downloading {url}")
-    with urllib.request.urlopen(url) as res, dest.open("wb") as out:
+    headers = {}
+    if token:
+        headers["Accept"] = "application/octet-stream"
+        headers["Authorization"] = f"Bearer {token}"
+        headers["X-GitHub-Api-Version"] = "2022-11-28"
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req) as res, dest.open("wb") as out:
         shutil.copyfileobj(res, out)
 
 
@@ -61,6 +67,7 @@ def main() -> None:
     stem = f"chirp-c-{args.platform}-{args.backend}"
     version = args.tag or args.version
     api = f"https://api.github.com/repos/{args.repo}/releases/latest" if version == "latest" else f"https://api.github.com/repos/{args.repo}/releases/tags/{version}"
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
     release = github_json(api)
     assets = release.get("assets", [])
     asset = next((a for a in assets if a.get("name", "").startswith(stem + ".tar.gz") or a.get("name", "").startswith(stem + ".zip")), None)
@@ -71,7 +78,8 @@ def main() -> None:
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         archive = tmp / asset["name"]
-        download(asset["browser_download_url"], archive)
+        url = asset["url"] if token else asset["browser_download_url"]
+        download(url, archive, token)
         extract(archive, tmp)
         extracted = tmp / stem
         if not extracted.exists():
