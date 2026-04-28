@@ -22,6 +22,11 @@ jobs:
             backend: vulkan
             archive_ext: tar.gz
             rust_target: x86_64-unknown-linux-gnu
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            backend: vulkan
+            archive_ext: tar.gz
+            rust_target: aarch64-unknown-linux-gnu
           - os: macos-14
             platform: darwin-arm64
             backend: metal

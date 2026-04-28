@@ -19,6 +19,7 @@ Release artifacts use `chirp-c-v*` tags:
 
 - `chirp-c-darwin-arm64-metal.tar.gz`
 - `chirp-c-linux-x64-vulkan.tar.gz`
+- `chirp-c-linux-arm64-vulkan.tar.gz`
 - `chirp-c-windows-x64-vulkan.zip`
 
 Windows native libraries are built with MSYS2 UCRT64/MinGW so they link cleanly with Go cgo. The package normalizes MinGW archive names to `lib*.a`, matching `-l...` linker flags.
@@ -55,6 +56,7 @@ Runner release artifacts use `chirp-runner-v*` tags:
 
 - `chirp-runner-darwin-arm64.tar.gz`
 - `chirp-runner-linux-x64.tar.gz`
+- `chirp-runner-linux-arm64.tar.gz`
 - `chirp-runner-windows-x64.zip`
 
 The runner is intentionally separate from the model bundle. Users can update native code, runner code, and models independently.

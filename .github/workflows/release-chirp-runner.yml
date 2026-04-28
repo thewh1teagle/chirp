@@ -49,6 +49,13 @@ jobs:
             goarch: amd64
             binary: chirp
             archive_ext: tar.gz
+          - runner: ubuntu-24.04-arm
+            platform: linux-arm64
+            backend: vulkan
+            goos: linux
+            goarch: arm64
+            binary: chirp
+            archive_ext: tar.gz
           - runner: macos-14
             platform: darwin-arm64
             backend: metal
