@@ -46,12 +46,18 @@ if(NOT TOKENIZERS_CPP_HEADER MATCHES "#include <cstdint>")
     string(REPLACE "#include <memory>" "#include <cstdint>\n#include <memory>" TOKENIZERS_CPP_HEADER "${TOKENIZERS_CPP_HEADER}")
     file(WRITE "${tokenizers_cpp_SOURCE_DIR}/include/tokenizers_cpp.h" "${TOKENIZERS_CPP_HEADER}")
 endif()
+file(READ "${tokenizers_cpp_SOURCE_DIR}/CMakeLists.txt" TOKENIZERS_CPP_CMAKE)
+string(REPLACE
+    "if (CMAKE_SYSTEM_PROCESSOR STREQUAL \"aarch64\")"
+    "if (CMAKE_SYSTEM_PROCESSOR STREQUAL \"aarch64\" AND CMAKE_CROSSCOMPILING)"
+    TOKENIZERS_CPP_CMAKE
+    "${TOKENIZERS_CPP_CMAKE}"
+)
 if(WIN32 AND MINGW)
-    file(READ "${tokenizers_cpp_SOURCE_DIR}/CMakeLists.txt" TOKENIZERS_CPP_CMAKE)
     string(REPLACE "x86_64-pc-windows-msvc" "x86_64-pc-windows-gnu" TOKENIZERS_CPP_CMAKE "${TOKENIZERS_CPP_CMAKE}")
     string(REPLACE "aarch64-pc-windows-msvc" "aarch64-pc-windows-gnullvm" TOKENIZERS_CPP_CMAKE "${TOKENIZERS_CPP_CMAKE}")
-    file(WRITE "${tokenizers_cpp_SOURCE_DIR}/CMakeLists.txt" "${TOKENIZERS_CPP_CMAKE}")
 endif()
+file(WRITE "${tokenizers_cpp_SOURCE_DIR}/CMakeLists.txt" "${TOKENIZERS_CPP_CMAKE}")
 add_subdirectory(${tokenizers_cpp_SOURCE_DIR} ${tokenizers_cpp_BINARY_DIR})
 
 FetchContent_Declare(
