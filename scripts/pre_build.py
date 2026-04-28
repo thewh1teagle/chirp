@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import os
 import platform
 import tarfile
 import urllib.request
@@ -31,8 +32,13 @@ def detect_host_target() -> str | None:
     return HOST_TRIPLE_MAP.get((platform.system(), platform.machine()))
 
 
-def download(url: str) -> bytes:
-    with urllib.request.urlopen(url, timeout=120) as response:
+def download(url: str, token: str | None = None) -> bytes:
+    request = urllib.request.Request(url)
+    if token:
+        request.add_header("Authorization", f"Bearer {token}")
+        request.add_header("Accept", "application/octet-stream")
+        request.add_header("X-GitHub-Api-Version", "2022-11-28")
+    with urllib.request.urlopen(request, timeout=120) as response:
         return response.read()
 
 
@@ -86,7 +92,7 @@ def main() -> int:
 
     url = f"https://github.com/{args.repo}/releases/download/{tag}/{archive_name}"
     print(f"Downloading {url}")
-    data = download(url)
+    data = download(url, os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN"))
     binary = extract_member(data, archive_name, member_name)
 
     dest_dir.mkdir(parents=True, exist_ok=True)
