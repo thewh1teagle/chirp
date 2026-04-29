@@ -1,8 +1,8 @@
-# runtimes/kokoro
+# Kokoro Runtime
 
-Small C++ ONNX Runtime proof of concept for Kokoro.
+Small C++ ONNX Runtime integration for Kokoro.
 
-This is intentionally narrow:
+This runtime is intentionally focused:
 
 - macOS-first CMake build
 - statically links Pyke's CPU ONNX Runtime archive
@@ -12,7 +12,7 @@ This is intentionally narrow:
 - exposes a small C API in `src/chirp_kokoro.h`
 - chunks text over `?`, `!`, `.`, and `,`
 
-Download test assets:
+Download local test assets:
 
 ```console
 mkdir -p /tmp/runtimes/kokoro-assets
