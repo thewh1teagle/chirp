@@ -89,7 +89,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
-          install: mingw-w64-ucrt-x86_64-vulkan-devel mingw-w64-ucrt-x86_64-gcc
+          install: mingw-w64-ucrt-x86_64-vulkan-devel mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
 
       - name: Add UCRT64 to PATH
         if: runner.os == 'Windows'
@@ -121,7 +121,12 @@ jobs:
       - name: Build Kokoro worker
         shell: bash
         run: |
+          CMAKE_ARGS=()
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            CMAKE_ARGS=(-G Ninja)
+          fi
           cmake -S runtimes/kokoro -B "dist/kokoro-worker-build-${{ matrix.platform }}" \
+            "${CMAKE_ARGS[@]}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
           cmake --build "dist/kokoro-worker-build-${{ matrix.platform }}" \

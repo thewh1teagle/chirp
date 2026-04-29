@@ -15,18 +15,19 @@ struct Request {
     std::string voices_path;
     std::string espeak_data_path;
     std::string voice = "af_heart";
-    std::string language = "en-US";
+    std::string language = "en-us";
     std::string input;
     std::string output_path;
     float speed = 1.0f;
 };
 
 std::string normalize_language(std::string language) {
-    if (language.empty() || language == "auto") return "en-US";
-    if (language == "english" || language == "en") return "en-US";
-    if (language == "british" || language == "en-GB" || language == "en-gb") return "en";
+    if (language.empty() || language == "auto") return "en-us";
+    if (language == "english" || language == "american" || language == "en-us" || language == "en-US") return "en-us";
+    if (language == "british" || language == "en" || language == "en-GB" || language == "en-gb") return "en";
     if (language == "spanish" || language == "es") return "es";
-    if (language == "french" || language == "fr") return "fr-fr";
+    if (language == "french" || language == "fr" || language == "fr-fr") return "fr";
+    if (language == "japanese" || language == "ja") return "ja";
     if (language == "hindi" || language == "hi") return "hi";
     if (language == "italian" || language == "it") return "it";
     if (language == "portuguese" || language == "pt") return "pt-br";
@@ -36,17 +37,19 @@ std::string normalize_language(std::string language) {
 std::string language_for_voice(const std::string & voice) {
     if (voice.rfind("bf_", 0) == 0 || voice.rfind("bm_", 0) == 0) return "en";
     if (voice.rfind("ef_", 0) == 0 || voice.rfind("em_", 0) == 0) return "es";
-    if (voice.rfind("ff_", 0) == 0) return "fr-fr";
+    if (voice.rfind("ff_", 0) == 0) return "fr";
+    if (voice.rfind("jf_", 0) == 0 || voice.rfind("jm_", 0) == 0) return "ja";
     if (voice.rfind("hf_", 0) == 0 || voice.rfind("hm_", 0) == 0) return "hi";
     if (voice.rfind("if_", 0) == 0 || voice.rfind("im_", 0) == 0) return "it";
     if (voice.rfind("pf_", 0) == 0 || voice.rfind("pm_", 0) == 0) return "pt-br";
-    return "en-US";
+    return "en-us";
 }
 
 std::string default_voice_for_language(const std::string & language) {
     if (language == "en") return "bf_emma";
     if (language == "es") return "ef_dora";
-    if (language == "fr-fr") return "ff_siwis";
+    if (language == "fr") return "ff_siwis";
+    if (language == "ja") return "jf_alpha";
     if (language == "hi") return "hf_alpha";
     if (language == "it") return "if_sara";
     if (language == "pt-br") return "pf_dora";
@@ -168,7 +171,7 @@ int main() {
             break;
         }
         if (req.method == "languages") {
-            ok(req.id, "\"languages\":[\"auto\",\"en-US\",\"en\",\"es\",\"fr-fr\",\"hi\",\"it\",\"pt-br\"]");
+            ok(req.id, "\"languages\":[\"auto\",\"en-us\",\"en\",\"es\",\"fr\",\"ja\",\"hi\",\"it\",\"pt-br\"]");
             continue;
         }
         if (req.method == "load") {

@@ -78,7 +78,7 @@ func New(params Params) (*Context, error) {
 		"voices_path":      params.VoicesPath,
 		"espeak_data_path": params.EspeakDataPath,
 		"voice":            defaultString(params.Voice, "af_heart"),
-		"language":         defaultString(params.Language, "en-US"),
+		"language":         kokoroLanguage(params.Language),
 		"speed":            defaultFloat(params.Speed, 1.0),
 	}, nil); err != nil {
 		ctx.Close()
@@ -112,7 +112,7 @@ func (c *Context) Languages() []chirpc.Language {
 	var resp response
 	if err := c.call(map[string]any{"method": "languages"}, &resp); err != nil {
 		c.err = err.Error()
-		return kokoroLanguages([]string{"en-US", "en", "es", "fr-fr", "hi", "it", "pt-br"})
+		return kokoroLanguages([]string{"en-us", "en", "es", "fr", "ja", "hi", "it", "pt-br"})
 	}
 	return kokoroLanguages(resp.Languages)
 }
@@ -122,7 +122,7 @@ func (c *Context) SynthesizeToFile(text, voice string, outputPath, language stri
 		"method":      "synthesize",
 		"input":       text,
 		"output_path": outputPath,
-		"language":    defaultString(language, "en-US"),
+		"language":    kokoroLanguage(language),
 		"voice":       voice,
 	}, nil)
 }
@@ -136,6 +136,29 @@ func kokoroLanguages(languages []string) []chirpc.Language {
 		out = append(out, chirpc.Language{Name: language, ID: i})
 	}
 	return out
+}
+
+func kokoroLanguage(language string) string {
+	switch strings.ToLower(strings.TrimSpace(language)) {
+	case "", "auto", "english", "american", "en-us":
+		return "en-us"
+	case "british", "en", "en-gb":
+		return "en"
+	case "spanish", "es":
+		return "es"
+	case "french", "fr", "fr-fr":
+		return "fr"
+	case "japanese", "ja":
+		return "ja"
+	case "hindi", "hi":
+		return "hi"
+	case "italian", "it":
+		return "it"
+	case "portuguese", "pt", "pt-br":
+		return "pt-br"
+	default:
+		return strings.TrimSpace(language)
+	}
 }
 
 func (c *Context) call(payload map[string]any, out *response) error {

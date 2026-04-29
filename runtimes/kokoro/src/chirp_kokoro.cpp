@@ -13,7 +13,7 @@ struct chirp_kokoro_context {
 chirp_kokoro_params chirp_kokoro_default_params(void) {
     chirp_kokoro_params params = {};
     params.voice = "af_heart";
-    params.language = "en-US";
+    params.language = "en-us";
     params.speed = 1.0f;
     return params;
 }
@@ -28,7 +28,7 @@ chirp_kokoro_context * chirp_kokoro_init(const chirp_kokoro_params * params) {
         params->model_path,
         params->voices_path,
         params->voice ? params->voice : "af_heart",
-        params->language ? params->language : "en-US",
+        params->language ? params->language : "en-us",
         params->speed,
     });
     if (!ctx->model->ok()) {

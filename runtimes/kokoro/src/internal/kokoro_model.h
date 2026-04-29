@@ -9,7 +9,7 @@ struct KokoroParams {
     const char * model_path = nullptr;
     const char * voices_path = nullptr;
     const char * voice = "af_heart";
-    const char * language = "en-US";
+    const char * language = "en-us";
     float speed = 1.0f;
 };
 

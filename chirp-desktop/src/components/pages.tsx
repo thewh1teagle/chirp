@@ -35,7 +35,7 @@ import { WaveformPlayer } from "./WaveformPlayer";
 
 const voiceCatalog = voiceCatalogJson as VoiceCatalog;
 type VoiceFilter = "all" | "male" | "female" | "american" | "british";
-type KokoroVoiceFilter = "all" | "male" | "female" | "english" | "spanish" | "french" | "hindi" | "italian" | "portuguese";
+type KokoroVoiceFilter = "all" | "male" | "female" | "english" | "japanese" | "spanish" | "french" | "hindi" | "italian" | "portuguese";
 
 const voiceFilters: Array<{ id: VoiceFilter; label: string }> = [
   { id: "all", label: "All" },
@@ -63,6 +63,11 @@ const kokoroVoices = [
   { id: "bm_george", name: "George", language: "British English", flag: "🇬🇧", gender: "male", grade: "C" },
   { id: "bm_fable", name: "Fable", language: "British English", flag: "🇬🇧", gender: "male", grade: "C" },
   { id: "bm_lewis", name: "Lewis", language: "British English", flag: "🇬🇧", gender: "male", grade: "D+" },
+  { id: "jf_alpha", name: "Alpha", language: "Japanese", flag: "🇯🇵", gender: "female", grade: "C+" },
+  { id: "jf_gongitsune", name: "Gongitsune", language: "Japanese", flag: "🇯🇵", gender: "female", grade: "C" },
+  { id: "jf_nezumi", name: "Nezumi", language: "Japanese", flag: "🇯🇵", gender: "female", grade: "C-" },
+  { id: "jf_tebukuro", name: "Tebukuro", language: "Japanese", flag: "🇯🇵", gender: "female", grade: "C" },
+  { id: "jm_kumo", name: "Kumo", language: "Japanese", flag: "🇯🇵", gender: "male", grade: "C-" },
   { id: "ef_dora", name: "Dora", language: "Spanish", flag: "🇪🇸", gender: "female" },
   { id: "em_alex", name: "Alex", language: "Spanish", flag: "🇪🇸", gender: "male" },
   { id: "em_santa", name: "Santa", language: "Spanish", flag: "🇪🇸", gender: "male" },
@@ -83,6 +88,7 @@ const kokoroVoiceFilters: Array<{ id: KokoroVoiceFilter; label: string }> = [
   { id: "female", label: "Female ♀" },
   { id: "male", label: "Male ♂" },
   { id: "english", label: "🇺🇸/🇬🇧 English" },
+  { id: "japanese", label: "🇯🇵 Japanese" },
   { id: "spanish", label: "🇪🇸 Spanish" },
   { id: "french", label: "🇫🇷 French" },
   { id: "hindi", label: "🇮🇳 Hindi" },

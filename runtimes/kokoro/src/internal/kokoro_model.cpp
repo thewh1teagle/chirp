@@ -226,7 +226,7 @@ struct KokoroModel::Impl {
     Ort::SessionOptions options;
     std::unique_ptr<Ort::Session> session;
     VoiceData voice;
-    std::string language = "en-US";
+    std::string language = "en-us";
     std::string error;
     float speed = 1.0f;
 
@@ -239,7 +239,7 @@ struct KokoroModel::Impl {
             error = "voices path is required";
             return;
         }
-        language = params.language ? params.language : "en-US";
+        language = params.language ? params.language : "en-us";
         speed = params.speed > 0.0f ? params.speed : 1.0f;
         std::string voice_name = params.voice ? params.voice : "af_heart";
         if (!load_voice_from_archive(params.voices_path, voice_name, voice, error)) {
@@ -324,7 +324,7 @@ bool KokoroModel::synthesize_to_file(const std::string & text, const std::string
             return false;
         }
         for (const auto & phonemes : phoneme_result.sentences) {
-            std::string misaki = espeak_to_misaki(phonemes, impl_->language == "en" || impl_->language == "en-GB" || impl_->language == "en-gb");
+            std::string misaki = espeak_to_misaki(phonemes, impl_->language == "en");
             if (std::getenv("CHIRP_KOKORO_DEBUG")) {
                 std::cerr << "text: " << chunk << "\n";
                 std::cerr << "espeak: " << phonemes << "\n";

@@ -11,7 +11,6 @@ struct PhonemizeResult {
     std::vector<std::string> sentences;
 };
 
-PhonemizeResult phonemize(const std::string & text, const std::string & language = "en-US");
+PhonemizeResult phonemize(const std::string & text, const std::string & language = "en-us");
 
 }
-
