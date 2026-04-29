@@ -41,15 +41,6 @@
 - Local HTTP API with Swagger docs for tools and automation
 - Agent-ready `/skill` instructions and voice preset catalog for AI workflows
 
-## Layout
-
-```console
-chirp-c/   C/C++ runtime, C API, GGUF conversion scripts
-chirp-runner/ Go CLI and HTTP server using chirp-c through cgo
-chirp-desktop/ Tauri + React desktop app
-plans/     implementation notes and validation logs
-```
-
 ## Build
 
 See [BUILDING.md](docs/BUILDING.md).
