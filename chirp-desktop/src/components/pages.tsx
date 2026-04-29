@@ -735,6 +735,15 @@ function VoiceLibraryDialog({
     [filter],
   );
 
+  useEffect(() => {
+    if (!open) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [open, onClose]);
+
   function previewVoice(voice: VoicePreset) {
     const audio = audioRef.current;
     if (!audio) return;
@@ -756,8 +765,11 @@ function VoiceLibraryDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/20 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-[720px] overflow-hidden rounded-2xl border border-border/30 bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/20 p-4 backdrop-blur-sm" onMouseDown={onClose}>
+      <div
+        className="w-full max-w-[720px] overflow-hidden rounded-2xl border border-border/30 bg-white shadow-2xl"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <audio ref={audioRef} onEnded={() => setPreviewVoiceId("")} />
         <div className="space-y-5 border-b border-border/10 p-6">
           <div className="flex items-start justify-between gap-5">
