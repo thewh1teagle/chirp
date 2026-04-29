@@ -46,7 +46,6 @@ func modelSources() modelSourcesResponse {
 				ID:          "qwen",
 				Name:        "Qwen",
 				Version:     qwenModelsTag,
-				Recommended: true,
 				Size:        "~900 MB",
 				Description: "Voice cloning, multilingual synthesis, best quality on supported GPU hardware.",
 				Files: []modelSourceFile{
@@ -59,6 +58,7 @@ func modelSources() modelSourcesResponse {
 				ID:          "kokoro",
 				Name:        "Kokoro",
 				Version:     kokoroModelsTag,
+				Recommended: true,
 				Size:        "~336 MB",
 				Description: "Fast local multi-voice speech with a lighter model bundle.",
 				ArchiveURL:  kokoroBundleURL,

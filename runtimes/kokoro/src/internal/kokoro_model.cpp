@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 #include <map>
 #include <numeric>
 #include <string>
@@ -252,7 +253,12 @@ struct KokoroModel::Impl {
         try {
             options.SetIntraOpNumThreads(1);
             options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+            #ifdef _WIN32
+            auto model_path = std::filesystem::path(params.model_path).wstring();
+            session = std::make_unique<Ort::Session>(env, model_path.c_str(), options);
+            #else
             session = std::make_unique<Ort::Session>(env, params.model_path, options);
+            #endif
         } catch (const Ort::Exception & e) {
             error = e.what();
         }

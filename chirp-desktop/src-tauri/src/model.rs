@@ -226,7 +226,7 @@ fn model_sources() -> ModelSources {
                 id: "qwen".to_string(),
                 name: "Qwen".to_string(),
                 version: MODELS_TAG.to_string(),
-                recommended: true,
+                recommended: false,
                 size: "~900 MB".to_string(),
                 description: "Voice cloning, multilingual synthesis, best quality on supported GPU hardware.".to_string(),
                 files: vec![
@@ -246,7 +246,7 @@ fn model_sources() -> ModelSources {
                 id: "kokoro".to_string(),
                 name: "Kokoro".to_string(),
                 version: KOKORO_MODELS_TAG.to_string(),
-                recommended: false,
+                recommended: true,
                 size: "~336 MB".to_string(),
                 description: "Fast local multi-voice speech with a lighter model bundle.".to_string(),
                 files: Vec::new(),

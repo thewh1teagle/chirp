@@ -110,7 +110,7 @@ type HomePageProps = PageProps & {
 export function OnboardPage({ bundle, setBundle }: PageProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [runtime, setRuntime] = useState<RuntimeId>("qwen");
+  const [runtime, setRuntime] = useState<RuntimeId>("kokoro");
   const [bundles, setBundles] = useState<Record<RuntimeId, ModelBundle | null>>({ qwen: null, kokoro: null });
   const [sources, setSources] = useState<ModelSource[]>([]);
   const [progress, setProgress] = useState<DownloadProgress | null>(null);
@@ -140,13 +140,15 @@ export function OnboardPage({ bundle, setBundle }: PageProps) {
         setBundles({ qwen, kokoro });
         setSources(modelSources.runtimes);
         const preferredRuntime = (localStorage.getItem("chirp.runtime") as RuntimeId | null) ?? bundle?.runtime;
-        if (preferredRuntime === "qwen" && qwen.installed) {
+        if (preferredRuntime === "kokoro" && kokoro.installed) {
+          setRuntime("kokoro");
+        } else if (preferredRuntime === "qwen" && qwen.installed) {
           setRuntime("qwen");
-        } else if (preferredRuntime === "kokoro" && kokoro.installed) {
+        } else if (kokoro.installed) {
           setRuntime("kokoro");
         } else if (qwen.installed) {
           setRuntime("qwen");
-        } else if (kokoro.installed) {
+        } else {
           setRuntime("kokoro");
         }
       } catch (err) {
@@ -187,8 +189,8 @@ export function OnboardPage({ bundle, setBundle }: PageProps) {
       : "Starting";
   const stageLabel = progress?.stage === "extracting" ? "Optimizing models..." : "Downloading voice model...";
   const options = (sources.length ? sources : [
-    { id: "qwen", name: "Qwen", version: "chirp-models-v0.1.3", recommended: true, size: "~900 MB", description: "Voice clone, multilingual, best on Mac GPU", files: [], directory: "chirp-models-q5_0" },
-    { id: "kokoro", name: "Kokoro", version: "kokoro-v1.0", recommended: false, size: "~336 MB", description: "Fast multi-voice speech, lighter setup", files: [], directory: "chirp-kokoro-models-kokoro-v1.0" },
+    { id: "kokoro", name: "Kokoro", version: "kokoro-v1.0", recommended: true, size: "~336 MB", description: "Fast multi-voice speech, lighter setup", files: [], directory: "chirp-kokoro-models-kokoro-v1.0" },
+    { id: "qwen", name: "Qwen", version: "chirp-models-v0.1.3", recommended: false, size: "~900 MB", description: "Voice clone, multilingual, best on Mac GPU", files: [], directory: "chirp-models-q5_0" },
   ]) as ModelSource[];
 
   return (

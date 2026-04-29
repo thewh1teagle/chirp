@@ -56,6 +56,14 @@ std::string default_voice_for_language(const std::string & language) {
     return "af_heart";
 }
 
+void set_env(const char * name, const std::string & value) {
+#ifdef _WIN32
+    _putenv_s(name, value.c_str());
+#else
+    setenv(name, value.c_str(), 1);
+#endif
+}
+
 std::string json_escape(const std::string & s) {
     std::string out;
     out.reserve(s.size() + 8);
@@ -181,7 +189,7 @@ int main() {
             loaded_language = req.language;
             loaded_speed = req.speed;
             if (!req.espeak_data_path.empty()) {
-                setenv("ESPEAK_DATA_PATH", req.espeak_data_path.c_str(), 1);
+                set_env("ESPEAK_DATA_PATH", req.espeak_data_path);
             }
             chirp_kokoro_params params = chirp_kokoro_default_params();
             params.model_path = req.model_path.c_str();
