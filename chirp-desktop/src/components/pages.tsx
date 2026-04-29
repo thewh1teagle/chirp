@@ -386,49 +386,53 @@ If the API returns no_model, ask the user to load or install the Chirp model in 
           <div className="space-y-4">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-30">Local API & Agents</h3>
             <Card className="divide-y divide-border/20 overflow-hidden border-none shadow-xl">
-              <div className="space-y-5 p-8">
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+              <div className="space-y-4 p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 space-y-1">
+                    <p className="flex items-center gap-2 text-base font-semibold tracking-tight text-primary">
                       <Server className="h-4 w-4 text-secondary opacity-40" />
-                      <p className="text-xl font-semibold tracking-tight text-primary">Chirp HTTP API</p>
-                    </div>
-                    <p className="max-w-[440px] text-sm leading-6 text-secondary opacity-60">
-                      Start the local runner, inspect Swagger docs, or give an AI agent the OpenAPI endpoint.
+                      Chirp HTTP API
                     </p>
+                    <p className="text-xs leading-5 text-secondary opacity-50">Swagger docs, OpenAPI schema, and agent-ready examples.</p>
                   </div>
-                  <Button onClick={startApi} disabled={startingApi} className="h-10 gap-2 px-4 text-xs">
-                    {startingApi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Server className="h-4 w-4" />}
-                    {apiUrl ? "Restart API" : "Start API"}
+                  <Button
+                    variant={apiUrl ? "secondary" : "primary"}
+                    onClick={startApi}
+                    disabled={startingApi}
+                    className="h-8 shrink-0 gap-2 rounded-full px-3 text-[10px] font-black uppercase tracking-[0.16em]"
+                  >
+                    {startingApi ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <span className={cn("h-1.5 w-1.5 rounded-full", apiUrl ? "bg-green-500" : "bg-white/70")} />
+                    )}
+                    {apiUrl ? "Running" : "Start API"}
                   </Button>
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Base URL</p>
-                  <p className="truncate rounded-lg border border-border/10 bg-background/50 px-3 py-2 font-mono text-[11px] text-secondary/70">
-                    {shownApiUrl}
-                  </p>
-                </div>
+                <p className="truncate rounded-lg border border-border/10 bg-background/50 px-3 py-2 font-mono text-[11px] text-secondary/70">
+                  {shownApiUrl}
+                </p>
 
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button variant="outline" onClick={openApiDocs} className="h-10 gap-2 px-4 text-xs">
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <Button variant="outline" onClick={openApiDocs} className="h-9 gap-2 px-3 text-[11px]">
                     <ExternalLink className="h-4 w-4" />
-                    Open Swagger
+                    Swagger
                   </Button>
-                  <Button variant="secondary" onClick={() => copyText("agent", agentPrompt)} className="h-10 gap-2 px-4 text-xs">
+                  <Button variant="secondary" onClick={() => copyText("agent", agentPrompt)} className="h-9 gap-2 px-3 text-[11px]">
                     {copied === "agent" ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
-                    {copied === "agent" ? "Copied" : "Copy Agent Skill"}
+                    {copied === "agent" ? "Copied" : "Agent Skill"}
                   </Button>
-                  <Button variant="secondary" onClick={() => copyText("curl", curlExamples)} className="h-10 gap-2 px-4 text-xs">
+                  <Button variant="secondary" onClick={() => copyText("curl", curlExamples)} className="h-9 gap-2 px-3 text-[11px]">
                     {copied === "curl" ? <Check className="h-4 w-4" /> : <Terminal className="h-4 w-4" />}
-                    {copied === "curl" ? "Copied" : "Copy cURL"}
+                    {copied === "curl" ? "Copied" : "cURL"}
                   </Button>
                 </div>
               </div>
 
-              <div className="space-y-3 bg-background/10 p-8">
+              <div className="space-y-2 bg-background/10 p-6">
                 <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Agent Skill Prompt</p>
-                <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-xl border border-border/10 bg-white p-4 text-[11px] leading-5 text-secondary/70">
+                <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-xl border border-border/10 bg-white p-3 text-[10px] leading-5 text-secondary/70">
                   {agentPrompt}
                 </pre>
               </div>
