@@ -35,8 +35,8 @@ type docsLanguagesOutput struct {
 
 type docsModelLoadInput struct {
 	Body struct {
-		ModelPath   string  `json:"model_path" example:"/path/to/qwen3-tts-q5_0.gguf"`
-		CodecPath   string  `json:"codec_path" example:"/path/to/qwen3-tts-codec-q5_0.gguf"`
+		ModelPath   string  `json:"model_path,omitempty" example:"/path/to/qwen3-tts-q5_0.gguf"`
+		CodecPath   string  `json:"codec_path,omitempty" example:"/path/to/qwen3-tts-codec-q5_0.gguf"`
 		MaxTokens   int     `json:"max_tokens,omitempty" example:"0"`
 		Temperature float32 `json:"temperature,omitempty" example:"0.9"`
 		TopK        int     `json:"top_k,omitempty" example:"50"`
@@ -54,6 +54,10 @@ type docsStatusOutput struct {
 	Body struct {
 		Status string `json:"status" example:"unloaded"`
 	}
+}
+
+type docsSkillOutput struct {
+	Body string `contentType:"text/markdown"`
 }
 
 type docsSpeechInput struct {
@@ -88,6 +92,16 @@ func (s *Server) registerDocsRoutes(mux *http.ServeMux) {
 
 	huma.Register(api, huma.Operation{
 		Method:      http.MethodGet,
+		Path:        "/skill",
+		OperationID: "getAgentSkill",
+		Summary:     "Get agent skill prompt",
+		Description: "Returns Markdown instructions for AI agents that want to use this local Chirp API.",
+	}, func(context.Context, *struct{}) (*docsSkillOutput, error) {
+		return nil, huma.Error501NotImplemented("spec-only operation")
+	})
+
+	huma.Register(api, huma.Operation{
+		Method:      http.MethodGet,
 		Path:        "/v1/models",
 		OperationID: "getModelState",
 		Summary:     "Get model state",
@@ -100,6 +114,7 @@ func (s *Server) registerDocsRoutes(mux *http.ServeMux) {
 		Path:        "/v1/models/load",
 		OperationID: "loadModel",
 		Summary:     "Load a Qwen3-TTS model",
+		Description: "Loads explicit model_path and codec_path when provided. If both are omitted, loads the default model paths from CHIRP_MODEL_PATH and CHIRP_CODEC_PATH.",
 	}, func(context.Context, *docsModelLoadInput) (*docsModelLoadOutput, error) {
 		return nil, huma.Error501NotImplemented("spec-only operation")
 	})

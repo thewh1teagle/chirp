@@ -2,6 +2,8 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"os"
 
@@ -63,8 +65,16 @@ func (s *Server) handleModelLoad(w http.ResponseWriter, r *http.Request) {
 		Temperature float32 `json:"temperature,omitempty"`
 		TopK        int     `json:"top_k,omitempty"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.ModelPath == "" || body.CodecPath == "" {
-		writeError(w, http.StatusBadRequest, errInvalidRequest, "request body must contain model_path and codec_path")
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil && !errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, errInvalidRequest, "invalid JSON request body")
+		return
+	}
+	if body.ModelPath == "" && body.CodecPath == "" {
+		body.ModelPath = os.Getenv("CHIRP_MODEL_PATH")
+		body.CodecPath = os.Getenv("CHIRP_CODEC_PATH")
+	}
+	if body.ModelPath == "" || body.CodecPath == "" {
+		writeError(w, http.StatusBadRequest, errInvalidRequest, "request body must contain model_path and codec_path, or CHIRP_MODEL_PATH and CHIRP_CODEC_PATH must be set")
 		return
 	}
 	if err := s.LoadModel(chirpc.Params{

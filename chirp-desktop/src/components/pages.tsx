@@ -316,12 +316,27 @@ export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
     window.setTimeout(() => setCopied(""), 1600);
   }
 
+  async function copyAgentSkill() {
+    const baseUrl = apiUrl || (await startApi());
+    if (!baseUrl) return;
+    try {
+      const response = await fetch(`${baseUrl}/skill`);
+      if (!response.ok) throw new Error(`failed to fetch skill (${response.status})`);
+      await copyText("agent", await response.text());
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
   const shownApiUrl = apiUrl || "Start the local API to see the URL";
-  const openApiUrl = apiUrl ? `${apiUrl}/openapi.json` : "http://127.0.0.1:<port>/openapi.json";
   const curlExamples = apiUrl
     ? `curl ${apiUrl}/health
 
 curl ${apiUrl}/openapi.json
+
+curl -X POST ${apiUrl}/v1/models/load \\
+  -H 'Content-Type: application/json' \\
+  -d '{}'
 
 curl -X POST ${apiUrl}/v1/audio/speech \\
   -H 'Content-Type: application/json' \\
@@ -329,15 +344,6 @@ curl -X POST ${apiUrl}/v1/audio/speech \\
   -d '{"input":"Hello from Chirp","language":"auto","response_format":"wav"}'`
     : `curl http://127.0.0.1:<port>/health
 curl http://127.0.0.1:<port>/openapi.json`;
-  const agentPrompt = `You are using Chirp, a local Qwen3-TTS HTTP API.
-
-Base URL: ${apiUrl || "ask the user for the local Chirp API base URL shown in Settings"}
-OpenAPI schema: ${openApiUrl}
-Swagger docs: ${apiUrl ? `${apiUrl}/docs` : "open the /docs endpoint from the local base URL"}
-
-Before calling the API, fetch the OpenAPI schema from /openapi.json and use it as the source of truth for request and response shapes.
-Use POST /v1/audio/speech to synthesize speech. Send JSON with input, optional voice_reference, language, and response_format set to wav. Save the audio/wav response to a .wav file.
-If the API returns no_model, ask the user to load or install the Chirp model in the desktop app first.`;
 
   return (
     <AppFrame bundle={bundle}>
@@ -419,7 +425,7 @@ If the API returns no_model, ask the user to load or install the Chirp model in 
                     <ExternalLink className="h-4 w-4" />
                     Swagger
                   </Button>
-                  <Button variant="secondary" onClick={() => copyText("agent", agentPrompt)} className="h-9 gap-2 px-3 text-[11px]">
+                  <Button variant="secondary" onClick={copyAgentSkill} className="h-9 gap-2 px-3 text-[11px]">
                     {copied === "agent" ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
                     {copied === "agent" ? "Copied" : "Agent Skill"}
                   </Button>

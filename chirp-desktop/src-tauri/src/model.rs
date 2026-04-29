@@ -1,8 +1,6 @@
 use futures_util::StreamExt;
 use serde::Serialize;
-use std::{
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 use tauri::{Emitter, Manager};
 use tokio::io::AsyncWriteExt;
 
@@ -89,7 +87,7 @@ pub async fn download_model_bundle(app: tauri::AppHandle) -> Result<ModelBundle,
     Ok(bundle)
 }
 
-fn model_bundle(app: &tauri::AppHandle) -> Result<ModelBundle, String> {
+pub fn model_bundle(app: &tauri::AppHandle) -> Result<ModelBundle, String> {
     let dir = model_dir(app)?;
     let model_path = dir.join(MODEL_FILE);
     let codec_path = dir.join(CODEC_FILE);
@@ -181,7 +179,8 @@ async fn download_model_file(
         .map_err(|err| format!("failed to create {}: {err}", part.display()))?;
     let mut stream = response.bytes_stream();
     while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|err| format!("failed to read model download from {url}: {err}"))?;
+        let chunk =
+            chunk.map_err(|err| format!("failed to read model download from {url}: {err}"))?;
         *downloaded += chunk.len() as u64;
         file.write_all(&chunk)
             .await

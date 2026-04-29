@@ -9,6 +9,8 @@ use std::{
 };
 use tauri::{Manager, State};
 
+use crate::model;
+
 pub struct RunnerState {
     pub process: Mutex<Option<RunnerProcess>>,
 }
@@ -65,11 +67,17 @@ pub struct SpeechRequest {
 }
 
 impl RunnerProcess {
-    fn spawn(binary_path: &Path) -> Result<Self, String> {
+    fn spawn(app: &tauri::AppHandle, binary_path: &Path) -> Result<Self, String> {
         let mut cmd = Command::new(binary_path);
         cmd.args(["serve", "--host", "127.0.0.1", "--port", "0"])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
+        if let Ok(bundle) = model::model_bundle(app) {
+            if bundle.installed {
+                cmd.env("CHIRP_MODEL_PATH", bundle.model_path);
+                cmd.env("CHIRP_CODEC_PATH", bundle.codec_path);
+            }
+        }
 
         #[cfg(target_os = "windows")]
         {
@@ -335,14 +343,20 @@ pub async fn copy_audio_file(source_path: String, destination_path: String) -> R
 
     let source = PathBuf::from(source_path);
     if !source.is_file() {
-        return Err(format!("source audio file does not exist: {}", source.display()));
+        return Err(format!(
+            "source audio file does not exist: {}",
+            source.display()
+        ));
     }
 
     let destination = PathBuf::from(destination_path);
     if let Some(parent) = destination.parent() {
-        tokio::fs::create_dir_all(parent)
-            .await
-            .map_err(|err| format!("failed to create destination folder {}: {err}", parent.display()))?;
+        tokio::fs::create_dir_all(parent).await.map_err(|err| {
+            format!(
+                "failed to create destination folder {}: {err}",
+                parent.display()
+            )
+        })?;
     }
 
     tokio::fs::copy(&source, &destination)
@@ -374,7 +388,7 @@ fn ensure_runner(app: &tauri::AppHandle, state: &State<'_, RunnerState>) -> Resu
     }
 
     let binary_path = resolve_runner_binary(app)?;
-    let process = RunnerProcess::spawn(&binary_path)?;
+    let process = RunnerProcess::spawn(app, &binary_path)?;
     let base_url = process.base_url();
     *guard = Some(process);
     Ok(base_url)
