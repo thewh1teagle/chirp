@@ -1,15 +1,12 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
-import { openPath, openUrl } from "@tauri-apps/plugin-opener";
+import { openPath } from "@tauri-apps/plugin-opener";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AudioLines,
   ChevronRight,
-  Check,
-  Clipboard,
   Download,
-  ExternalLink,
   FileAudio,
   FolderOpen,
   Languages,
@@ -17,20 +14,20 @@ import {
   Pause,
   Play,
   Plus,
-  Server,
   Settings,
   Sparkles,
-  Terminal,
   UserRound,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import type { Dispatch, SetStateAction } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import voiceCatalogJson from "../assets/voices.json";
-import { CreateStep, DownloadedVoice, DownloadProgress, ModelBundle, RunnerInfo, VoiceCatalog, VoicePreset } from "../types";
-import { cn, formatBytes, sampleText } from "../utils";
+import { DownloadedVoice, DownloadProgress, ModelBundle, RunnerInfo, StudioState, VoiceCatalog, VoicePreset } from "../types";
+import { cn, formatBytes } from "../utils";
 import { AppFrame } from "./AppFrame";
 import { CreateStatus } from "./CreateStatus";
+import { AgentsPanel } from "./settings/AgentsPanel";
 import { Button, Brand, Card, ErrorBlock, Eyebrow, Progress } from "./ui";
 import { WaveformPlayer } from "./WaveformPlayer";
 
@@ -48,6 +45,11 @@ const voiceFilters: Array<{ id: VoiceFilter; label: string }> = [
 type PageProps = {
   bundle: ModelBundle | null;
   setBundle: (bundle: ModelBundle) => void;
+};
+
+type HomePageProps = PageProps & {
+  studio: StudioState;
+  setStudio: Dispatch<SetStateAction<StudioState>>;
 };
 
 export function OnboardPage({ bundle, setBundle }: PageProps) {
@@ -157,26 +159,48 @@ export function OnboardPage({ bundle, setBundle }: PageProps) {
   );
 }
 
-export function HomePage({ bundle, setBundle }: PageProps) {
+export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps) {
   const navigate = useNavigate();
-  const [text, setText] = useState(sampleText);
-  const [referencePath, setReferencePath] = useState("");
-  const [languages, setLanguages] = useState<string[]>(["auto"]);
-  const [language, setLanguage] = useState("auto");
-  const [audioPath, setAudioPath] = useState("");
-  const [step, setStep] = useState<CreateStep>("idle");
-  const [status, setStatus] = useState("Ready to generate.");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+  const { text, referencePath, languages, language, audioPath, step, status, busy, error } = studio;
+  const loadingLanguagesRef = useRef(false);
 
   const audioSrc = useMemo(() => (audioPath ? convertFileSrc(audioPath) : ""), [audioPath]);
+  const updateStudio = (patch: Partial<StudioState>) => setStudio((current) => ({ ...current, ...patch }));
+
+  useEffect(() => {
+    if (!bundle?.installed || busy || languages.length > 1 || loadingLanguagesRef.current) return;
+    const currentBundle = bundle;
+    loadingLanguagesRef.current = true;
+
+    async function loadLanguages() {
+      try {
+        await invoke<RunnerInfo>("start_runner");
+        await invoke("load_model", {
+          request: {
+            model_path: currentBundle.model_path,
+            codec_path: currentBundle.codec_path,
+            temperature: 0.9,
+            top_k: 50,
+          },
+        });
+        const supportedLanguages = await invoke<string[]>("get_languages");
+        if (supportedLanguages.length) updateStudio({ languages: supportedLanguages });
+      } catch {
+        updateStudio({ languages: ["auto"] });
+      } finally {
+        loadingLanguagesRef.current = false;
+      }
+    }
+
+    loadLanguages();
+  }, [bundle, busy, languages.length]);
 
   async function chooseReference() {
     const selected = await open({
       multiple: false,
       filters: [{ name: "WAV audio", extensions: ["wav"] }],
     });
-    if (typeof selected === "string") setReferencePath(selected);
+    if (typeof selected === "string") updateStudio({ referencePath: selected });
   }
 
   async function createVoice() {
@@ -187,20 +211,16 @@ export function HomePage({ bundle, setBundle }: PageProps) {
       return;
     }
     if (!text.trim()) {
-      setStatus("Input text required.");
+      updateStudio({ status: "Input text required." });
       return;
     }
 
-    setBusy(true);
-    setError("");
-    setAudioPath("");
+    updateStudio({ busy: true, error: "", audioPath: "" });
     try {
-      setStep("starting");
-      setStatus("Initializing Engine...");
+      updateStudio({ step: "starting", status: "Initializing Engine..." });
       await invoke<RunnerInfo>("start_runner");
 
-      setStep("loading");
-      setStatus("Loading models...");
+      updateStudio({ step: "loading", status: "Loading models..." });
       await invoke("load_model", {
         request: {
           model_path: current.model_path,
@@ -211,12 +231,11 @@ export function HomePage({ bundle, setBundle }: PageProps) {
       });
 
       const supportedLanguages = await invoke<string[]>("get_languages");
-      setLanguages(supportedLanguages.length ? supportedLanguages : ["auto"]);
+      updateStudio({ languages: supportedLanguages.length ? supportedLanguages : ["auto"] });
       const selectedLanguage = supportedLanguages.includes(language) ? language : "auto";
-      if (selectedLanguage !== language) setLanguage("auto");
+      if (selectedLanguage !== language) updateStudio({ language: "auto" });
 
-      setStep("creating");
-      setStatus("Generating audio...");
+      updateStudio({ step: "creating", status: "Generating audio..." });
       const output = await invoke<string>("synthesize", {
         request: {
           input: text,
@@ -224,15 +243,11 @@ export function HomePage({ bundle, setBundle }: PageProps) {
           language: selectedLanguage,
         },
       });
-      setAudioPath(output);
-      setStep("done");
-      setStatus("Generation complete.");
+      updateStudio({ audioPath: output, step: "done", status: "Generation complete." });
     } catch (err) {
-      setStep("idle");
-      setError(String(err));
-      setStatus("Generation failed.");
+      updateStudio({ step: "idle", error: String(err), status: "Generation failed." });
     } finally {
-      setBusy(false);
+      updateStudio({ busy: false });
     }
   }
 
@@ -243,7 +258,7 @@ export function HomePage({ bundle, setBundle }: PageProps) {
 
         <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
           <div className="space-y-8">
-            <EditorCard busy={busy} text={text} setText={setText} createVoice={createVoice} />
+            <EditorCard busy={busy} text={text} setText={(nextText) => updateStudio({ text: nextText })} createVoice={createVoice} />
 
             <AnimatePresence>
               {audioPath && (
@@ -265,8 +280,8 @@ export function HomePage({ bundle, setBundle }: PageProps) {
               languages={languages}
               referencePath={referencePath}
               chooseReference={chooseReference}
-              setLanguage={setLanguage}
-              setReferencePath={setReferencePath}
+              setLanguage={(nextLanguage) => updateStudio({ language: nextLanguage })}
+              setReferencePath={(nextPath) => updateStudio({ referencePath: nextPath })}
             />
 
             <AnimatePresence>
@@ -289,10 +304,8 @@ export function HomePage({ bundle, setBundle }: PageProps) {
 }
 
 export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
+  const [tab, setTab] = useState<"storage" | "agents">("storage");
   const [error, setError] = useState("");
-  const [apiUrl, setApiUrl] = useState("");
-  const [startingApi, setStartingApi] = useState(false);
-  const [copied, setCopied] = useState<"agent" | "curl" | "">("");
 
   async function openModelsFolder() {
     setError("");
@@ -303,61 +316,6 @@ export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
       setError(String(err));
     }
   }
-
-  async function startApi() {
-    setStartingApi(true);
-    setError("");
-    try {
-      const info = await invoke<RunnerInfo>("start_runner");
-      setApiUrl(info.base_url);
-      return info.base_url;
-    } catch (err) {
-      setError(String(err));
-      return "";
-    } finally {
-      setStartingApi(false);
-    }
-  }
-
-  async function openApiDocs() {
-    const baseUrl = apiUrl || (await startApi());
-    if (baseUrl) await openUrl(`${baseUrl}/docs`);
-  }
-
-  async function copyText(kind: "agent" | "curl", text: string) {
-    await navigator.clipboard.writeText(text);
-    setCopied(kind);
-    window.setTimeout(() => setCopied(""), 1600);
-  }
-
-  async function copyAgentSkill() {
-    const baseUrl = apiUrl || (await startApi());
-    if (!baseUrl) return;
-    try {
-      const response = await fetch(`${baseUrl}/skill`);
-      if (!response.ok) throw new Error(`failed to fetch skill (${response.status})`);
-      await copyText("agent", await response.text());
-    } catch (err) {
-      setError(String(err));
-    }
-  }
-
-  const shownApiUrl = apiUrl || "Start the local API to see the URL";
-  const curlExamples = apiUrl
-    ? `curl ${apiUrl}/health
-
-curl ${apiUrl}/openapi.json
-
-curl -X POST ${apiUrl}/v1/models/load \\
-  -H 'Content-Type: application/json' \\
-  -d '{}'
-
-curl -X POST ${apiUrl}/v1/audio/speech \\
-  -H 'Content-Type: application/json' \\
-  -o speech.wav \\
-  -d '{"input":"Hello from Chirp","language":"auto","response_format":"wav"}'`
-    : `curl http://127.0.0.1:<port>/health
-curl http://127.0.0.1:<port>/openapi.json`;
 
   return (
     <AppFrame bundle={bundle}>
@@ -373,88 +331,60 @@ curl http://127.0.0.1:<port>/openapi.json`;
           </div>
         </header>
 
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-30">Infrastructure & Storage</h3>
-            <Card className="overflow-hidden border-none shadow-xl">
-              <div className="flex flex-col gap-8 p-8 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0 flex-1 space-y-1">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Models Directory</p>
-                  <p className="font-mono text-[11px] text-secondary/70 bg-background/50 px-3 py-2 rounded-lg border border-border/10 truncate">
-                    {bundle?.model_dir ?? "Resolving system path..."}
-                  </p>
-                </div>
-                <Button variant="outline" onClick={openModelsFolder} className="gap-2 h-10 px-4 shrink-0 text-xs">
-                  <FolderOpen className="h-4 w-4" />
-                  Open Models Folder
-                </Button>
-              </div>
-
-              <div className="flex flex-col gap-8 p-8 sm:flex-row sm:items-center sm:justify-between bg-background/10">
-                <div className="space-y-0.5">
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Engine Specification</p>
-                  <p className="text-xl font-semibold tracking-tight text-primary">{bundle?.version ?? "v0.1.3-standard"}</p>
-                </div>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-border/40 text-[9px] font-black uppercase tracking-[0.2em] text-green-600 shadow-sm">
-                  <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                  Live System
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-30">Local API & Agents</h3>
-            <Card className="divide-y divide-border/20 overflow-hidden border-none shadow-xl">
-              <div className="space-y-4 p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="min-w-0 space-y-1">
-                    <p className="flex items-center gap-2 text-base font-semibold tracking-tight text-primary">
-                      <Server className="h-4 w-4 text-secondary opacity-40" />
-                      Chirp HTTP API
-                    </p>
-                    <p className="text-xs leading-5 text-secondary opacity-50">Swagger docs, OpenAPI schema, and agent-ready examples.</p>
-                  </div>
-                  <Button
-                    variant={apiUrl ? "secondary" : "primary"}
-                    onClick={startApi}
-                    disabled={startingApi}
-                    className="h-8 shrink-0 gap-2 rounded-full px-3 text-[10px] font-black uppercase tracking-[0.16em]"
-                  >
-                    {startingApi ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <span className={cn("h-1.5 w-1.5 rounded-full", apiUrl ? "bg-green-500" : "bg-white/70")} />
-                    )}
-                    {apiUrl ? "Running" : "Start API"}
-                  </Button>
-                </div>
-
-                <p className="truncate rounded-lg border border-border/10 bg-background/50 px-3 py-2 font-mono text-[11px] text-secondary/70">
-                  {shownApiUrl}
-                </p>
-
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <Button variant="outline" onClick={openApiDocs} className="h-9 gap-2 px-3 text-[11px]">
-                    <ExternalLink className="h-4 w-4" />
-                    Swagger
-                  </Button>
-                  <Button variant="secondary" onClick={copyAgentSkill} className="h-9 gap-2 px-3 text-[11px]">
-                    {copied === "agent" ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
-                    {copied === "agent" ? "Copied" : "Agent Skill"}
-                  </Button>
-                  <Button variant="secondary" onClick={() => copyText("curl", curlExamples)} className="h-9 gap-2 px-3 text-[11px]">
-                    {copied === "curl" ? <Check className="h-4 w-4" /> : <Terminal className="h-4 w-4" />}
-                    {copied === "curl" ? "Copied" : "cURL"}
-                  </Button>
-                </div>
-              </div>
-
-            </Card>
-          </div>
+        <div className="flex rounded-full border border-border/30 bg-white p-1 shadow-sm">
+          {[
+            ["storage", "Storage"],
+            ["agents", "Agents"],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id as "storage" | "agents")}
+              className={cn(
+                "h-9 flex-1 rounded-full text-[10px] font-black uppercase tracking-[0.18em] transition-all",
+                tab === id ? "bg-primary text-white shadow-sm" : "text-secondary opacity-50 hover:text-primary hover:opacity-100",
+              )}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
-        {error && <ErrorBlock>{error}</ErrorBlock>}
+        {tab === "storage" ? (
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-30">Infrastructure & Storage</h3>
+              <Card className="overflow-hidden border-none shadow-xl">
+                <div className="flex flex-col gap-8 p-8 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Models Directory</p>
+                    <p className="font-mono text-[11px] text-secondary/70 bg-background/50 px-3 py-2 rounded-lg border border-border/10 truncate">
+                      {bundle?.model_dir ?? "Resolving system path..."}
+                    </p>
+                  </div>
+                  <Button variant="outline" onClick={openModelsFolder} className="gap-2 h-10 px-4 shrink-0 text-xs">
+                    <FolderOpen className="h-4 w-4" />
+                    Open Models Folder
+                  </Button>
+                </div>
+
+                <div className="flex flex-col gap-8 p-8 sm:flex-row sm:items-center sm:justify-between bg-background/10">
+                  <div className="space-y-0.5">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Engine Specification</p>
+                    <p className="text-xl font-semibold tracking-tight text-primary">{bundle?.version ?? "v0.1.3-standard"}</p>
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-border/40 text-[9px] font-black uppercase tracking-[0.2em] text-green-600 shadow-sm">
+                    <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                    Live System
+                  </div>
+                </div>
+              </Card>
+            </div>
+            {error && <ErrorBlock>{error}</ErrorBlock>}
+          </div>
+        ) : (
+          <AgentsPanel />
+        )}
       </section>
     </AppFrame>
   );

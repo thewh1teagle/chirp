@@ -20,6 +20,18 @@ export type DownloadProgress = {
 
 export type CreateStep = "idle" | "starting" | "loading" | "creating" | "done";
 
+export type StudioState = {
+  text: string;
+  referencePath: string;
+  languages: string[];
+  language: string;
+  audioPath: string;
+  step: CreateStep;
+  status: string;
+  busy: boolean;
+  error: string;
+};
+
 export type VoicePreset = {
   id: string;
   name: string;

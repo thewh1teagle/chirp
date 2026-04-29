@@ -24,7 +24,7 @@ Recommended flow:
 4. Send JSON with input, optional voice_reference, language, and response_format set to wav.
 5. Save the audio/wav response to a .wav file.
 
-Bundled voice presets are listed in the Chirp source tree at chirp-desktop/src/assets/voices.json.
+Bundled voice presets are listed at https://raw.githubusercontent.com/thewh1teagle/chirp/main/chirp-desktop/src/assets/voices.json.
 Use the url for a preset voice to download a reference WAV, then pass the downloaded local path as voice_reference.
 
 Example:

@@ -98,13 +98,13 @@ The output is a WAV file.
 
 ## Preset Voices
 
-Bundled voice presets are listed in the Chirp source tree at:
+Bundled voice presets are listed at:
 
 ```console
-chirp-desktop/src/assets/voices.json
+https://raw.githubusercontent.com/thewh1teagle/chirp/main/chirp-desktop/src/assets/voices.json
 ```
 
-Each entry includes an `id`, `name`, `description`, `lang`, and `url`. Download the preset WAV from `url`, then pass the downloaded local file path as `voice_reference`.
+Each entry includes an `id`, `name`, `description`, `language`, and `url`. Download the preset WAV from `url`, then pass the downloaded local file path as `voice_reference`.
 
 ## Use HTTP Server
 
