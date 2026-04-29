@@ -1,6 +1,6 @@
 [package]
 name = "chirp"
-version = "1.0.2"
+version = "1.0.1"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -22,7 +22,6 @@ tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-opener = "2"
 tauri-plugin-http = "2"
 tauri-plugin-dialog = "2"
-tauri-plugin-aptabase = { git = "https://github.com/thewh1teagle/tauri-plugin-aptabase", branch = "deterministic-daily-session" }
 reqwest = { version = "0.12", features = ["json", "stream"] }
 flate2 = "1"
 futures-util = "0.3"

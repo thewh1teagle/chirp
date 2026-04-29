@@ -1,4 +1,3 @@
-mod analytics;
 mod files;
 mod model;
 mod runner;
@@ -11,7 +10,7 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut builder = tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_http::init())
@@ -34,25 +33,7 @@ pub fn run() {
             runner::synthesize,
             runner::copy_audio_file,
             voices::download_voice,
-        ]);
-
-    if analytics::is_configured() {
-        let options = tauri_plugin_aptabase::InitOptions {
-            host: Some(analytics::APTABASE_BASE_URL.to_string()),
-            ..Default::default()
-        };
-        builder = builder.plugin(
-            tauri_plugin_aptabase::Builder::new(analytics::APTABASE_APP_KEY)
-                .with_options(options)
-                .build(),
-        );
-    }
-
-    let app = builder
-        .setup(|app| {
-            analytics::track_event(app, analytics::events::APP_STARTED);
-            Ok(())
-        })
+        ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
 
