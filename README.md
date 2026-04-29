@@ -38,7 +38,8 @@
 - 🎮 Optimized for `Nvidia` / `AMD` / `Intel` GPUs
 - 🍎 Optimized desktop builds for Apple Silicon macOS
 - CLI support for creating WAV files
-- Local HTTP API for app and automation use
+- Local HTTP API with Swagger docs for tools and automation
+- Agent-ready `/skill` instructions and voice preset catalog for AI workflows
 
 ## Layout
 
