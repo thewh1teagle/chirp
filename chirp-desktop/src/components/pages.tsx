@@ -828,7 +828,7 @@ function VoiceLibraryDialog({
                       type="button"
                       disabled={busy || !!voiceBusy}
                       onClick={() => onChoose(voice)}
-                      className="flex h-7 w-7 items-center justify-center rounded-full border border-border/40 bg-white text-secondary shadow-sm transition-all hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                      className="flex h-7 items-center justify-center gap-1.5 rounded-full border border-border/40 bg-white px-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-secondary shadow-sm transition-all hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
                       aria-label={`Use ${voice.name}`}
                     >
                       {voiceBusy === voice.id ? (
@@ -838,6 +838,7 @@ function VoiceLibraryDialog({
                       ) : (
                         <Download className="h-3.5 w-3.5" />
                       )}
+                      {referencePath.endsWith(`${voice.id}.wav`) ? "Used" : "Use"}
                     </button>
                   </div>
                 </div>
