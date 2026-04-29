@@ -254,27 +254,22 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
 
   return (
     <AppFrame bundle={bundle}>
-      <div className="w-full max-w-[1200px] space-y-10">
+      <div className="w-full max-w-[1200px]">
         <StudioHeader bundle={bundle} />
-
-        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
-          <div className="space-y-8">
+        <div className="grid gap-12 mt-4 lg:grid-cols-[1fr_360px]">
+          <div className="space-y-6">
             <EditorCard busy={busy} text={text} setText={(nextText) => updateStudio({ text: nextText })} createVoice={createVoice} />
 
             <AnimatePresence>
               {audioPath && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 12 }} 
-                  animate={{ opacity: 1, y: 0 }} 
-                  exit={{ opacity: 0, y: 8 }}
-                >
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}>
                   <WaveformPlayer src={audioSrc} sourcePath={audioPath} filename={audioPath.split(/[\\/]/).pop() || "generated-audio.wav"} />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
-          <aside className="space-y-8">
+          <aside className="space-y-6">
             <VoiceSettings
               busy={busy}
               language={language}
@@ -287,11 +282,7 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
 
             <AnimatePresence>
               {busy && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                >
+                <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.98 }}>
                   <CreateStatus step={step} status={status} />
                 </motion.div>
               )}
@@ -370,25 +361,27 @@ export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
 export function AgentsPage({ bundle }: { bundle: ModelBundle | null }) {
   return (
     <AppFrame bundle={bundle}>
-      <section className="w-full max-w-[760px] space-y-10">
-        <MainNav active="agents" />
+      <section className="w-full max-w-[1200px]">
+        <WorkspaceHeader bundle={bundle} active="api" />
 
-        <header className="space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/40 bg-white shadow-sm">
-              <Bot className="h-5 w-5 text-primary" />
+        <div className="mx-auto mt-4 max-w-[760px] space-y-10">
+          <header className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/40 bg-white shadow-sm">
+                <Bot className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-secondary opacity-35">Local Service</p>
+                <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">API Workspace</h1>
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-secondary opacity-35">Local API</p>
-              <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">Agent Workspace</h1>
-            </div>
-          </div>
-          <p className="max-w-[520px] text-base leading-7 text-secondary opacity-60">
-            Start Chirp's local HTTP API, open Swagger, and copy agent-ready instructions for using speech synthesis from tools.
-          </p>
-        </header>
+            <p className="max-w-[520px] text-base leading-7 text-secondary opacity-60">
+              Start Chirp's local HTTP API, open Swagger, and copy agent-ready instructions for using speech synthesis from tools.
+            </p>
+          </header>
 
-        <AgentsPanel />
+          <AgentsPanel />
+        </div>
       </section>
     </AppFrame>
   );
@@ -396,40 +389,37 @@ export function AgentsPage({ bundle }: { bundle: ModelBundle | null }) {
 
 function StudioHeader({ bundle }: { bundle: ModelBundle | null }) {
   return (
-    <header className="space-y-8">
-      <MainNav active="studio" />
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-      <div className="space-y-3">
-        <div className="flex items-center gap-3">
-          <Brand />
-          <div className="h-1 w-1 rounded-full bg-border/40" />
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary opacity-30">Production Studio</span>
-        </div>
-        <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">Speech Studio</h1>
+    <WorkspaceHeader bundle={bundle} active="studio" />
+  );
+}
+
+function WorkspaceHeader({ bundle, active }: { bundle: ModelBundle | null; active: "studio" | "api" }) {
+  return (
+    <header className="flex h-[88px] items-center justify-between">
+      <div className="flex items-center gap-6">
+        <Brand />
+        <MainNav active={active} />
       </div>
       <div className="flex items-center gap-4">
-        <div className="hidden text-right sm:block space-y-0.5">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">System Status</p>
-          <p className="text-sm font-semibold text-primary">{bundle?.version.split("-").pop() ?? "v0.1.3"}</p>
-        </div>
-        <div className="h-10 w-[1px] bg-border/20" />
-        <Link to="/settings" className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-white text-secondary transition-all hover:border-primary hover:text-primary hover:scale-105 shadow-sm">
+        <span className="text-[10px] font-medium tracking-widest text-secondary opacity-40 uppercase">
+          {bundle?.version.split("-").pop() ?? "v0.1.3"}
+        </span>
+        <Link to="/settings" className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 text-secondary transition-all hover:border-primary hover:text-primary">
           <Settings className="h-4 w-4" />
         </Link>
-      </div>
       </div>
     </header>
   );
 }
 
-function MainNav({ active }: { active: "studio" | "agents" }) {
+function MainNav({ active }: { active: "studio" | "api" }) {
   const items = [
     { id: "studio", label: "Studio", to: "/home", icon: AudioLines },
-    { id: "agents", label: "Agents", to: "/agents", icon: Bot },
+    { id: "api", label: "API", to: "/agents", icon: Bot },
   ] as const;
 
   return (
-    <nav className="inline-flex rounded-2xl border border-border/30 bg-white p-1.5 shadow-sm">
+    <nav className="inline-flex min-w-[220px] rounded-2xl border border-border/30 bg-white p-1.5 shadow-sm">
       {items.map((item) => {
         const Icon = item.icon;
         const isActive = active === item.id;
@@ -438,7 +428,7 @@ function MainNav({ active }: { active: "studio" | "agents" }) {
             key={item.id}
             to={item.to}
             className={cn(
-              "flex h-10 items-center gap-2 rounded-xl px-4 text-[11px] font-black uppercase tracking-[0.16em] transition-all",
+              "flex h-10 flex-1 items-center justify-center gap-2 rounded-xl px-4 text-[11px] font-black uppercase tracking-[0.16em] transition-all",
               isActive ? "bg-primary text-white shadow-sm" : "text-secondary opacity-55 hover:text-primary hover:opacity-100",
             )}
           >

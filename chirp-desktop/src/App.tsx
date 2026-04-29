@@ -1,10 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
-import { PageTransition } from "./components/PageTransition";
 import { AgentsPage, HomePage, OnboardPage, SettingsPage } from "./components/pages";
 import { Brand } from "./components/ui";
 import { ModelBundle, StudioState } from "./types";
@@ -70,43 +69,13 @@ function App() {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes key={location.pathname} location={location}>
-        <Route
-          path="/onboard"
-          element={
-            <PageTransition>
-              <OnboardPage bundle={bundle} setBundle={setBundle} />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/home"
-          element={
-            <PageTransition>
-              <HomePage bundle={bundle} setBundle={setBundle} studio={studio} setStudio={setStudio} />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/agents"
-          element={
-            <PageTransition>
-              <AgentsPage bundle={bundle} />
-            </PageTransition>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <PageTransition>
-              <SettingsPage bundle={bundle} />
-            </PageTransition>
-          }
-        />
-        <Route path="*" element={<Navigate to={bundle?.installed ? "/home" : "/onboard"} replace />} />
-      </Routes>
-    </AnimatePresence>
+    <Routes>
+      <Route path="/onboard" element={<OnboardPage bundle={bundle} setBundle={setBundle} />} />
+      <Route path="/home" element={<HomePage bundle={bundle} setBundle={setBundle} studio={studio} setStudio={setStudio} />} />
+      <Route path="/agents" element={<AgentsPage bundle={bundle} />} />
+      <Route path="/settings" element={<SettingsPage bundle={bundle} />} />
+      <Route path="*" element={<Navigate to={bundle?.installed ? "/home" : "/onboard"} replace />} />
+    </Routes>
   );
 }
 
