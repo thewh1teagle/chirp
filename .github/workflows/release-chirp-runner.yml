@@ -121,15 +121,17 @@ jobs:
       - name: Build Kokoro worker
         shell: bash
         run: |
+          CMAKE_BIN=cmake
           CMAKE_ARGS=()
           if [ "${{ runner.os }}" = "Windows" ]; then
-            CMAKE_ARGS=(-G Ninja)
+            CMAKE_BIN="/c/Program Files/CMake/bin/cmake.exe"
+            CMAKE_ARGS=(-G "Visual Studio 17 2022" -A x64)
           fi
-          cmake -S runtimes/kokoro -B "dist/kokoro-worker-build-${{ matrix.platform }}" \
+          "$CMAKE_BIN" -S runtimes/kokoro -B "dist/kokoro-worker-build-${{ matrix.platform }}" \
             "${CMAKE_ARGS[@]}" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
-          cmake --build "dist/kokoro-worker-build-${{ matrix.platform }}" \
+          "$CMAKE_BIN" --build "dist/kokoro-worker-build-${{ matrix.platform }}" \
             --target chirp-kokoro-worker \
             --config Release \
             -j

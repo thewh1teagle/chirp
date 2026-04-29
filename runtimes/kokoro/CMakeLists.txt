@@ -104,14 +104,6 @@ set_target_properties(onnxruntime_static PROPERTIES
     IMPORTED_LOCATION "${PYKE_ORT_LIB}"
 )
 
-if(WIN32)
-    set(ESPEAK_NG_LIB "${espeak_ng_BINARY_DIR}/src/libespeak-ng/libespeak-ng.a")
-    set(UCD_LIB "${espeak_ng_BINARY_DIR}/src/ucd-tools/libucd.a")
-else()
-    set(ESPEAK_NG_LIB "${espeak_ng_BINARY_DIR}/src/libespeak-ng/libespeak-ng.a")
-    set(UCD_LIB "${espeak_ng_BINARY_DIR}/src/ucd-tools/libucd.a")
-endif()
-
 add_library(chirp-kokoro-lib STATIC
     src/chirp_kokoro.cpp
     src/internal/chunk.cpp
@@ -133,8 +125,8 @@ target_include_directories(chirp-kokoro-lib PUBLIC
 target_link_libraries(chirp-kokoro-lib PRIVATE
     onnxruntime_static
     miniz
-    "${ESPEAK_NG_LIB}"
-    "${UCD_LIB}"
+    "$<TARGET_FILE:espeak-ng>"
+    "$<TARGET_FILE:ucd>"
 )
 if(APPLE)
     target_link_libraries(chirp-kokoro-lib PRIVATE m c++ "-framework Foundation")
