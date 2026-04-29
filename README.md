@@ -2,6 +2,9 @@
 
 Native Qwen3-TTS inference experiments.
 
+<img width="800" alt="319shots_so" src="https://github.com/user-attachments/assets/6f8fca35-bf3b-4bdb-bdcc-1c52f535e04d" />
+
+
 ## Features
 
 - Local text-to-speech with Qwen3-TTS
