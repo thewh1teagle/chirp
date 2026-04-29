@@ -34,6 +34,9 @@
 - Voice cloning from a reference WAV
 - Create speech in 10 supported languages
 - Audio preview after creation
+- 💻 Desktop support for `macOS`, `Windows`, and `Linux`
+- ⚡ GPU/runtime acceleration through the native `chirp-c` runtime
+- 🍎 Optimized desktop builds for Apple Silicon macOS
 - CLI support for creating WAV files
 - Local HTTP API for app and automation use
 
