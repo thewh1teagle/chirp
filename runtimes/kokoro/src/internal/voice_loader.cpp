@@ -8,8 +8,13 @@
 #include <exception>
 #include <fstream>
 #include <string>
-#include <unistd.h>
 #include <vector>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 
 namespace chirp_kokoro {
 namespace {
@@ -17,12 +22,20 @@ namespace {
 class TempFile {
 public:
     TempFile() {
+#ifdef _WIN32
+        char temp_dir[MAX_PATH + 1] = {};
+        char temp_path[MAX_PATH + 1] = {};
+        if (GetTempPathA(MAX_PATH, temp_dir) > 0 && GetTempFileNameA(temp_dir, "ckv", 0, temp_path) != 0) {
+            path_ = temp_path;
+        }
+#else
         char pattern[] = "/tmp/chirp-kokoro-voice-XXXXXX";
         int fd = mkstemp(pattern);
         if (fd >= 0) {
             close(fd);
             path_ = pattern;
         }
+#endif
     }
 
     ~TempFile() {

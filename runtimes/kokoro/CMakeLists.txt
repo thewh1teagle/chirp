@@ -112,6 +112,10 @@ add_library(chirp-kokoro-lib STATIC
     src/internal/phonemize.cpp
     src/internal/voice_loader.cpp
 )
+target_compile_features(chirp-kokoro-lib PUBLIC cxx_std_17)
+if(MSVC)
+    target_compile_options(chirp-kokoro-lib PRIVATE /utf-8)
+endif()
 target_include_directories(chirp-kokoro-lib PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/internal"
