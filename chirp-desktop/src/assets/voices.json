@@ -1,0 +1,203 @@
+{
+  "version": "chirp-voices-v0.1.0",
+  "source": "hexgrad/Kokoro-TTS",
+  "text": "Failure doesn't mean you are a failure it just means you haven't succeeded yet.",
+  "voices": [
+    {
+      "id": "american_f_heart",
+      "name": "Heart",
+      "description": "Kokoro reference voice Heart.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_f_heart.wav"
+    },
+    {
+      "id": "american_f_bella",
+      "name": "Bella",
+      "description": "Kokoro reference voice Bella.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_f_bella.wav"
+    },
+    {
+      "id": "american_f_nicole",
+      "name": "Nicole",
+      "description": "Kokoro reference voice Nicole.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_f_nicole.wav"
+    },
+    {
+      "id": "american_f_aoede",
+      "name": "Aoede",
+      "description": "Kokoro reference voice Aoede.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_f_aoede.wav"
+    },
+    {
+      "id": "american_f_kore",
+      "name": "Kore",
+      "description": "Kokoro reference voice Kore.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_f_kore.wav"
+    },
+    {
+      "id": "american_f_sarah",
+      "name": "Sarah",
+      "description": "Kokoro reference voice Sarah.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_f_sarah.wav"
+    },
+    {
+      "id": "american_f_nova",
+      "name": "Nova",
+      "description": "Kokoro reference voice Nova.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_f_nova.wav"
+    },
+    {
+      "id": "american_f_sky",
+      "name": "Sky",
+      "description": "Kokoro reference voice Sky.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_f_sky.wav"
+    },
+    {
+      "id": "american_f_alloy",
+      "name": "Alloy",
+      "description": "Kokoro reference voice Alloy.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_f_alloy.wav"
+    },
+    {
+      "id": "american_f_jessica",
+      "name": "Jessica",
+      "description": "Kokoro reference voice Jessica.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_f_jessica.wav"
+    },
+    {
+      "id": "american_f_river",
+      "name": "River",
+      "description": "Kokoro reference voice River.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_f_river.wav"
+    },
+    {
+      "id": "american_m_michael",
+      "name": "Michael",
+      "description": "Kokoro reference voice Michael.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_m_michael.wav"
+    },
+    {
+      "id": "american_m_fenrir",
+      "name": "Fenrir",
+      "description": "Kokoro reference voice Fenrir.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_m_fenrir.wav"
+    },
+    {
+      "id": "american_m_puck",
+      "name": "Puck",
+      "description": "Kokoro reference voice Puck.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_m_puck.wav"
+    },
+    {
+      "id": "american_m_echo",
+      "name": "Echo",
+      "description": "Kokoro reference voice Echo.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_m_echo.wav"
+    },
+    {
+      "id": "american_m_eric",
+      "name": "Eric",
+      "description": "Kokoro reference voice Eric.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_m_eric.wav"
+    },
+    {
+      "id": "american_m_liam",
+      "name": "Liam",
+      "description": "Kokoro reference voice Liam.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_m_liam.wav"
+    },
+    {
+      "id": "american_m_onyx",
+      "name": "Onyx",
+      "description": "Kokoro reference voice Onyx.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_m_onyx.wav"
+    },
+    {
+      "id": "american_m_santa",
+      "name": "Santa",
+      "description": "Kokoro reference voice Santa.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_m_santa.wav"
+    },
+    {
+      "id": "american_m_adam",
+      "name": "Adam",
+      "description": "Kokoro reference voice Adam.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/american_m_adam.wav"
+    },
+    {
+      "id": "british_f_emma",
+      "name": "Emma",
+      "description": "Kokoro reference voice Emma.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/british_f_emma.wav"
+    },
+    {
+      "id": "british_f_isabella",
+      "name": "Isabella",
+      "description": "Kokoro reference voice Isabella.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/british_f_isabella.wav"
+    },
+    {
+      "id": "british_f_alice",
+      "name": "Alice",
+      "description": "Kokoro reference voice Alice.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/british_f_alice.wav"
+    },
+    {
+      "id": "british_f_lily",
+      "name": "Lily",
+      "description": "Kokoro reference voice Lily.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/british_f_lily.wav"
+    },
+    {
+      "id": "british_m_george",
+      "name": "George",
+      "description": "Kokoro reference voice George.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/british_m_george.wav"
+    },
+    {
+      "id": "british_m_fable",
+      "name": "Fable",
+      "description": "Kokoro reference voice Fable.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/british_m_fable.wav"
+    },
+    {
+      "id": "british_m_lewis",
+      "name": "Lewis",
+      "description": "Kokoro reference voice Lewis.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/british_m_lewis.wav"
+    },
+    {
+      "id": "british_m_daniel",
+      "name": "Daniel",
+      "description": "Kokoro reference voice Daniel.",
+      "language": "English",
+      "url": "https://github.com/thewh1teagle/chirp/releases/download/chirp-voices-v0.1.0/british_m_daniel.wav"
+    }
+  ]
+}

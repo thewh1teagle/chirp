@@ -21,15 +21,19 @@ import {
   Settings,
   Sparkles,
   Terminal,
+  UserRound,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { CreateStep, DownloadProgress, ModelBundle, RunnerInfo } from "../types";
+import voiceCatalogJson from "../assets/voices.json";
+import { CreateStep, DownloadedVoice, DownloadProgress, ModelBundle, RunnerInfo, VoiceCatalog, VoicePreset } from "../types";
 import { cn, formatBytes, sampleText } from "../utils";
 import { AppFrame } from "./AppFrame";
 import { CreateStatus } from "./CreateStatus";
 import { Button, Brand, Card, ErrorBlock, Eyebrow, Progress } from "./ui";
 import { WaveformPlayer } from "./WaveformPlayer";
+
+const voiceCatalog = voiceCatalogJson as VoiceCatalog;
 
 type PageProps = {
   bundle: ModelBundle | null;
@@ -557,6 +561,26 @@ function VoiceSettings({
   setReferencePath: (path: string) => void;
 }) {
   const referenceSrc = useMemo(() => (referencePath ? convertFileSrc(referencePath) : ""), [referencePath]);
+  const [voiceBusy, setVoiceBusy] = useState("");
+  const [voiceError, setVoiceError] = useState("");
+
+  async function choosePresetVoice(voice: VoicePreset) {
+    setVoiceBusy(voice.id);
+    setVoiceError("");
+    try {
+      const downloaded = await invoke<DownloadedVoice>("download_voice", {
+        request: {
+          id: voice.id,
+          url: voice.url,
+        },
+      });
+      setReferencePath(downloaded.path);
+    } catch (err) {
+      setVoiceError(String(err));
+    } finally {
+      setVoiceBusy("");
+    }
+  }
 
   return (
     <Card className="space-y-8 p-6 border-none shadow-xl">
@@ -606,6 +630,43 @@ function VoiceSettings({
             </div>
           )}
         </div>
+      </div>
+
+      <div className="h-[1px] bg-border/10" />
+
+      <div className="space-y-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <UserRound className="h-4 w-4 text-secondary opacity-40" />
+            <Eyebrow className="mb-0">Voice Library</Eyebrow>
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-secondary opacity-30">
+            {voiceCatalog.voices.length} voices
+          </span>
+        </div>
+        <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto pr-1">
+          {voiceCatalog.voices.map((voice) => (
+            <button
+              key={voice.id}
+              type="button"
+              disabled={busy || !!voiceBusy}
+              onClick={() => choosePresetVoice(voice)}
+              className={cn(
+                "group min-w-0 rounded-xl border border-border/30 bg-white p-3 text-left shadow-sm transition-all hover:border-primary/30 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50",
+                referencePath.endsWith(`${voice.id}.wav`) && "border-primary bg-background/30",
+              )}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <p className="truncate text-xs font-bold tracking-tight text-primary">{voice.name}</p>
+                {voiceBusy === voice.id ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-secondary opacity-40" /> : null}
+              </div>
+              <p className="mt-1 truncate text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">
+                {voice.id.startsWith("british") ? "British" : "American"} / {voice.id.includes("_m_") ? "Male" : "Female"}
+              </p>
+            </button>
+          ))}
+        </div>
+        {voiceError ? <p className="text-xs font-medium text-red-900">{voiceError}</p> : null}
       </div>
 
       <div className="h-[1px] bg-border/10" />

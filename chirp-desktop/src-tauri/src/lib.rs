@@ -1,6 +1,7 @@
 mod files;
 mod model;
 mod runner;
+mod voices;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -28,6 +29,7 @@ pub fn run() {
             runner::get_languages,
             runner::synthesize,
             runner::copy_audio_file,
+            voices::download_voice,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
