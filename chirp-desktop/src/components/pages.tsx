@@ -35,6 +35,15 @@ import { Button, Brand, Card, ErrorBlock, Eyebrow, Progress } from "./ui";
 import { WaveformPlayer } from "./WaveformPlayer";
 
 const voiceCatalog = voiceCatalogJson as VoiceCatalog;
+type VoiceFilter = "all" | "male" | "female" | "american" | "british";
+
+const voiceFilters: Array<{ id: VoiceFilter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "female", label: "Female" },
+  { id: "male", label: "Male" },
+  { id: "american", label: "American" },
+  { id: "british", label: "British" },
+];
 
 type PageProps = {
   bundle: ModelBundle | null;
@@ -636,18 +645,22 @@ function VoiceSettings({
 
       <div className="h-[1px] bg-border/10" />
 
-      <div className="space-y-3">
-        <div className="flex items-center gap-2.5">
-          <UserRound className="h-4 w-4 text-secondary opacity-40" />
-          <Eyebrow className="mb-0">Voice Library</Eyebrow>
+      <div className="rounded-xl border border-border/30 bg-white p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0 space-y-1">
+            <div className="flex items-center gap-2">
+              <UserRound className="h-4 w-4 text-secondary opacity-40" />
+              <p className="text-xs font-bold tracking-tight text-primary">Preset Voices</p>
+            </div>
+            <p className="truncate text-[10px] font-bold uppercase tracking-widest text-secondary opacity-30">
+              {voiceCatalog.voices.length} downloadable references
+            </p>
+          </div>
+          <Button variant="secondary" onClick={() => setLibraryOpen(true)} disabled={busy} className="h-9 shrink-0 gap-2 px-3 text-[11px]">
+            Browse
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
         </div>
-        <Button variant="outline" onClick={() => setLibraryOpen(true)} disabled={busy} className="h-11 w-full justify-between px-4 text-xs">
-          <span className="flex items-center gap-2">
-            <UserRound className="h-4 w-4" />
-            Choose preset voice
-          </span>
-          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-secondary opacity-40">{voiceCatalog.voices.length} voices</span>
-        </Button>
         {voiceError ? <p className="text-xs font-medium text-red-900">{voiceError}</p> : null}
       </div>
 
@@ -705,34 +718,67 @@ function VoiceLibraryDialog({
   onClose: () => void;
   onChoose: (voice: VoicePreset) => void;
 }) {
+  const [filter, setFilter] = useState<VoiceFilter>("all");
+  const visibleVoices = useMemo(
+    () =>
+      voiceCatalog.voices.filter((voice) => {
+        if (filter === "all") return true;
+        if (filter === "american") return voice.id.startsWith("american");
+        if (filter === "british") return voice.id.startsWith("british");
+        if (filter === "male") return voice.id.includes("_m_");
+        return voice.id.includes("_f_");
+      }),
+    [filter],
+  );
+
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/20 p-4 backdrop-blur-sm">
       <div className="w-full max-w-[720px] overflow-hidden rounded-2xl border border-border/30 bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-5 border-b border-border/10 p-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <UserRound className="h-4 w-4 text-secondary opacity-40" />
-              <p className="text-xl font-semibold tracking-tight text-primary">Voice Library</p>
+        <div className="space-y-5 border-b border-border/10 p-6">
+          <div className="flex items-start justify-between gap-5">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <UserRound className="h-4 w-4 text-secondary opacity-40" />
+                <p className="text-xl font-semibold tracking-tight text-primary">Voice Library</p>
+              </div>
+              <p className="max-w-[460px] text-sm leading-6 text-secondary opacity-60">
+                Preset reference voices are downloaded only when selected.
+              </p>
             </div>
-            <p className="max-w-[460px] text-sm leading-6 text-secondary opacity-60">
-              Preset reference voices are downloaded only when selected.
-            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/40 bg-white text-secondary shadow-sm transition-all hover:border-primary hover:text-primary"
+              aria-label="Close voice library"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/40 bg-white text-secondary shadow-sm transition-all hover:border-primary hover:text-primary"
-            aria-label="Close voice library"
-          >
-            <X className="h-4 w-4" />
-          </button>
+
+          <div className="flex flex-wrap gap-2">
+            {voiceFilters.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setFilter(item.id)}
+                className={cn(
+                  "h-8 rounded-full border px-3 text-[10px] font-black uppercase tracking-[0.16em] transition-all",
+                  filter === item.id
+                    ? "border-primary bg-primary text-white shadow-sm"
+                    : "border-border/40 bg-white text-secondary opacity-60 hover:border-primary/30 hover:text-primary hover:opacity-100",
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="max-h-[58vh] overflow-y-auto p-6">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {voiceCatalog.voices.map((voice) => (
+            {visibleVoices.map((voice) => (
               <button
                 key={voice.id}
                 type="button"
