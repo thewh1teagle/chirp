@@ -98,6 +98,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/models/load", s.handleModelLoad)
 	mux.HandleFunc("DELETE /v1/models", s.handleModelUnload)
 	mux.HandleFunc("POST /v1/audio/speech", s.handleSpeech)
+	s.registerDocsRoutes(mux)
 	return recoveryMiddleware(mux)
 }
 

@@ -1,12 +1,15 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
-import { openPath } from "@tauri-apps/plugin-opener";
+import { openPath, openUrl } from "@tauri-apps/plugin-opener";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AudioLines,
   ChevronRight,
+  Check,
+  Clipboard,
   Download,
+  ExternalLink,
   FileAudio,
   FolderOpen,
   Languages,
@@ -14,8 +17,10 @@ import {
   Pause,
   Play,
   Plus,
+  Server,
   Settings,
   Sparkles,
+  Terminal,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
@@ -271,6 +276,9 @@ export function HomePage({ bundle, setBundle }: PageProps) {
 
 export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
   const [error, setError] = useState("");
+  const [apiUrl, setApiUrl] = useState("");
+  const [startingApi, setStartingApi] = useState(false);
+  const [copied, setCopied] = useState<"agent" | "curl" | "">("");
 
   async function openModelsFolder() {
     setError("");
@@ -281,6 +289,55 @@ export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
       setError(String(err));
     }
   }
+
+  async function startApi() {
+    setStartingApi(true);
+    setError("");
+    try {
+      const info = await invoke<RunnerInfo>("start_runner");
+      setApiUrl(info.base_url);
+      return info.base_url;
+    } catch (err) {
+      setError(String(err));
+      return "";
+    } finally {
+      setStartingApi(false);
+    }
+  }
+
+  async function openApiDocs() {
+    const baseUrl = apiUrl || (await startApi());
+    if (baseUrl) await openUrl(`${baseUrl}/docs`);
+  }
+
+  async function copyText(kind: "agent" | "curl", text: string) {
+    await navigator.clipboard.writeText(text);
+    setCopied(kind);
+    window.setTimeout(() => setCopied(""), 1600);
+  }
+
+  const shownApiUrl = apiUrl || "Start the local API to see the URL";
+  const openApiUrl = apiUrl ? `${apiUrl}/openapi.json` : "http://127.0.0.1:<port>/openapi.json";
+  const curlExamples = apiUrl
+    ? `curl ${apiUrl}/health
+
+curl ${apiUrl}/openapi.json
+
+curl -X POST ${apiUrl}/v1/audio/speech \\
+  -H 'Content-Type: application/json' \\
+  -o speech.wav \\
+  -d '{"input":"Hello from Chirp","language":"auto","response_format":"wav"}'`
+    : `curl http://127.0.0.1:<port>/health
+curl http://127.0.0.1:<port>/openapi.json`;
+  const agentPrompt = `You are using Chirp, a local Qwen3-TTS HTTP API.
+
+Base URL: ${apiUrl || "ask the user for the local Chirp API base URL shown in Settings"}
+OpenAPI schema: ${openApiUrl}
+Swagger docs: ${apiUrl ? `${apiUrl}/docs` : "open the /docs endpoint from the local base URL"}
+
+Before calling the API, fetch the OpenAPI schema from /openapi.json and use it as the source of truth for request and response shapes.
+Use POST /v1/audio/speech to synthesize speech. Send JSON with input, optional voice_reference, language, and response_format set to wav. Save the audio/wav response to a .wav file.
+If the API returns no_model, ask the user to load or install the Chirp model in the desktop app first.`;
 
   return (
     <AppFrame bundle={bundle}>
@@ -322,6 +379,58 @@ export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
                   <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
                   Live System
                 </div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-30">Local API & Agents</h3>
+            <Card className="divide-y divide-border/20 overflow-hidden border-none shadow-xl">
+              <div className="space-y-5 p-8">
+                <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <Server className="h-4 w-4 text-secondary opacity-40" />
+                      <p className="text-xl font-semibold tracking-tight text-primary">Chirp HTTP API</p>
+                    </div>
+                    <p className="max-w-[440px] text-sm leading-6 text-secondary opacity-60">
+                      Start the local runner, inspect Swagger docs, or give an AI agent the OpenAPI endpoint.
+                    </p>
+                  </div>
+                  <Button onClick={startApi} disabled={startingApi} className="h-10 gap-2 px-4 text-xs">
+                    {startingApi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Server className="h-4 w-4" />}
+                    {apiUrl ? "Restart API" : "Start API"}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Base URL</p>
+                  <p className="truncate rounded-lg border border-border/10 bg-background/50 px-3 py-2 font-mono text-[11px] text-secondary/70">
+                    {shownApiUrl}
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button variant="outline" onClick={openApiDocs} className="h-10 gap-2 px-4 text-xs">
+                    <ExternalLink className="h-4 w-4" />
+                    Open Swagger
+                  </Button>
+                  <Button variant="secondary" onClick={() => copyText("agent", agentPrompt)} className="h-10 gap-2 px-4 text-xs">
+                    {copied === "agent" ? <Check className="h-4 w-4" /> : <Clipboard className="h-4 w-4" />}
+                    {copied === "agent" ? "Copied" : "Copy Agent Skill"}
+                  </Button>
+                  <Button variant="secondary" onClick={() => copyText("curl", curlExamples)} className="h-10 gap-2 px-4 text-xs">
+                    {copied === "curl" ? <Check className="h-4 w-4" /> : <Terminal className="h-4 w-4" />}
+                    {copied === "curl" ? "Copied" : "Copy cURL"}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-3 bg-background/10 p-8">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Agent Skill Prompt</p>
+                <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded-xl border border-border/10 bg-white p-4 text-[11px] leading-5 text-secondary/70">
+                  {agentPrompt}
+                </pre>
               </div>
             </Card>
           </div>
