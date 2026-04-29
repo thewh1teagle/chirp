@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 import { PageTransition } from "./components/PageTransition";
-import { HomePage, OnboardPage, SettingsPage } from "./components/pages";
+import { AgentsPage, HomePage, OnboardPage, SettingsPage } from "./components/pages";
 import { Brand } from "./components/ui";
 import { ModelBundle, StudioState } from "./types";
 import { sampleText } from "./utils";
@@ -85,6 +85,14 @@ function App() {
           element={
             <PageTransition>
               <HomePage bundle={bundle} setBundle={setBundle} studio={studio} setStudio={setStudio} />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/agents"
+          element={
+            <PageTransition>
+              <AgentsPage bundle={bundle} />
             </PageTransition>
           }
         />

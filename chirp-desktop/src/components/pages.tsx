@@ -5,6 +5,7 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AudioLines,
+  Bot,
   ChevronRight,
   Download,
   FileAudio,
@@ -27,7 +28,7 @@ import { DownloadedVoice, DownloadProgress, ModelBundle, RunnerInfo, StudioState
 import { cn, formatBytes } from "../utils";
 import { AppFrame } from "./AppFrame";
 import { CreateStatus } from "./CreateStatus";
-import { AgentsPanel } from "./settings/AgentsPanel";
+import { AgentsPanel } from "./agents/AgentsPanel";
 import { Button, Brand, Card, ErrorBlock, Eyebrow, Progress } from "./ui";
 import { WaveformPlayer } from "./WaveformPlayer";
 
@@ -304,7 +305,6 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
 }
 
 export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
-  const [tab, setTab] = useState<"storage" | "agents">("storage");
   const [error, setError] = useState("");
 
   async function openModelsFolder() {
@@ -331,27 +331,7 @@ export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
           </div>
         </header>
 
-        <div className="flex rounded-full border border-border/30 bg-white p-1 shadow-sm">
-          {[
-            ["storage", "Storage"],
-            ["agents", "Agents"],
-          ].map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id as "storage" | "agents")}
-              className={cn(
-                "h-9 flex-1 rounded-full text-[10px] font-black uppercase tracking-[0.18em] transition-all",
-                tab === id ? "bg-primary text-white shadow-sm" : "text-secondary opacity-50 hover:text-primary hover:opacity-100",
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {tab === "storage" ? (
-          <div className="space-y-8">
+        <div className="space-y-8">
             <div className="space-y-4">
               <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-30">Infrastructure & Storage</h3>
               <Card className="overflow-hidden border-none shadow-xl">
@@ -381,10 +361,34 @@ export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
               </Card>
             </div>
             {error && <ErrorBlock>{error}</ErrorBlock>}
+        </div>
+      </section>
+    </AppFrame>
+  );
+}
+
+export function AgentsPage({ bundle }: { bundle: ModelBundle | null }) {
+  return (
+    <AppFrame bundle={bundle}>
+      <section className="w-full max-w-[760px] space-y-10">
+        <MainNav active="agents" />
+
+        <header className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/40 bg-white shadow-sm">
+              <Bot className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-secondary opacity-35">Local API</p>
+              <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">Agent Workspace</h1>
+            </div>
           </div>
-        ) : (
-          <AgentsPanel />
-        )}
+          <p className="max-w-[520px] text-base leading-7 text-secondary opacity-60">
+            Start Chirp's local HTTP API, open Swagger, and copy agent-ready instructions for using speech synthesis from tools.
+          </p>
+        </header>
+
+        <AgentsPanel />
       </section>
     </AppFrame>
   );
@@ -392,7 +396,9 @@ export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
 
 function StudioHeader({ bundle }: { bundle: ModelBundle | null }) {
   return (
-    <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+    <header className="space-y-8">
+      <MainNav active="studio" />
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
       <div className="space-y-3">
         <div className="flex items-center gap-3">
           <Brand />
@@ -411,7 +417,37 @@ function StudioHeader({ bundle }: { bundle: ModelBundle | null }) {
           <Settings className="h-4 w-4" />
         </Link>
       </div>
+      </div>
     </header>
+  );
+}
+
+function MainNav({ active }: { active: "studio" | "agents" }) {
+  const items = [
+    { id: "studio", label: "Studio", to: "/home", icon: AudioLines },
+    { id: "agents", label: "Agents", to: "/agents", icon: Bot },
+  ] as const;
+
+  return (
+    <nav className="inline-flex rounded-2xl border border-border/30 bg-white p-1.5 shadow-sm">
+      {items.map((item) => {
+        const Icon = item.icon;
+        const isActive = active === item.id;
+        return (
+          <Link
+            key={item.id}
+            to={item.to}
+            className={cn(
+              "flex h-10 items-center gap-2 rounded-xl px-4 text-[11px] font-black uppercase tracking-[0.16em] transition-all",
+              isActive ? "bg-primary text-white shadow-sm" : "text-secondary opacity-55 hover:text-primary hover:opacity-100",
+            )}
+          >
+            <Icon className="h-4 w-4" />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
