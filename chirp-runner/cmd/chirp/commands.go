@@ -24,11 +24,16 @@ func newServeCommand() *cobra.Command {
 	var host, modelPath, codecPath string
 	var port, maxTokens, topK int
 	var temperature float32
+	var exitWithParent bool
 
 	cmd := &cobra.Command{
 		Use:   "serve",
 		Short: "Start a Qwen3-TTS HTTP runner",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if exitWithParent {
+				go watchParent()
+			}
+
 			s := server.New()
 			s.Version = version
 			s.Commit = commit
@@ -56,6 +61,7 @@ func newServeCommand() *cobra.Command {
 	cmd.Flags().IntVar(&maxTokens, "max-tokens", 0, "maximum generated frames (0 = runtime default)")
 	cmd.Flags().Float32Var(&temperature, "temperature", 0.9, "sampling temperature")
 	cmd.Flags().IntVar(&topK, "top-k", 50, "top-k sampling")
+	cmd.Flags().BoolVar(&exitWithParent, "exit-with-parent", true, "exit when the parent process exits")
 	return cmd
 }
 

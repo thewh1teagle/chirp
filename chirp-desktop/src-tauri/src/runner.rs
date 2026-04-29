@@ -94,6 +94,7 @@ impl RunnerProcess {
 
         if let Err(err) = reader.read_line(&mut line) {
             let stderr_output = read_first_stderr_line(stderr.take());
+            kill_child(&mut child);
             return Err(format_runner_start_error(
                 "failed to read ready signal",
                 &err.to_string(),
@@ -105,6 +106,7 @@ impl RunnerProcess {
             Ok(signal) => signal,
             Err(err) => {
                 let stderr_output = read_first_stderr_line(stderr.take());
+                kill_child(&mut child);
                 return Err(format_runner_start_error(
                     "failed to parse ready signal",
                     &err.to_string(),
@@ -113,8 +115,17 @@ impl RunnerProcess {
             }
         };
         if signal.status != "ready" {
+            kill_child(&mut child);
             return Err(format!("unexpected Chirp runner status: {}", signal.status));
         }
+
+        let client = match reqwest::Client::builder().no_proxy().build() {
+            Ok(client) => client,
+            Err(err) => {
+                kill_child(&mut child);
+                return Err(format!("failed to build HTTP client: {err}"));
+            }
+        };
 
         std::thread::spawn(move || {
             let mut buf = String::new();
@@ -143,10 +154,7 @@ impl RunnerProcess {
         Ok(Self {
             port: signal.port,
             child,
-            client: reqwest::Client::builder()
-                .no_proxy()
-                .build()
-                .map_err(|err| format!("failed to build HTTP client: {err}"))?,
+            client,
             stderr_buf,
         })
     }
@@ -167,8 +175,7 @@ impl RunnerProcess {
     }
 
     fn kill(&mut self) {
-        let _ = self.child.kill();
-        let _ = self.child.wait();
+        kill_child(&mut self.child);
     }
 }
 
@@ -196,6 +203,18 @@ pub async fn stop_runner(state: State<'_, RunnerState>) -> Result<(), String> {
         process.kill();
     }
     Ok(())
+}
+
+pub fn stop_managed_runner(app: &tauri::AppHandle) {
+    let state = app.state::<RunnerState>();
+    match state.process.lock() {
+        Ok(mut guard) => {
+            if let Some(mut process) = guard.take() {
+                process.kill();
+            }
+        }
+        Err(_) => eprintln!("runner state lock poisoned during app shutdown"),
+    };
 }
 
 #[tauri::command]
@@ -441,6 +460,11 @@ fn read_first_stderr_line(stderr: Option<impl std::io::Read>) -> String {
     let _ = reader.read_line(&mut buf);
     buf.truncate(4096);
     buf
+}
+
+fn kill_child(child: &mut Child) {
+    let _ = child.kill();
+    let _ = child.wait();
 }
 
 fn format_runner_start_error(context: &str, error: &str, stderr: &str) -> String {
