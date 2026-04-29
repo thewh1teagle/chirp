@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::Path;
 use tauri::Manager;
 
 #[derive(Debug, Deserialize)]
@@ -23,11 +23,11 @@ pub async fn download_voice(
         return Err("voice URL is empty".to_string());
     }
 
-    let voices_dir = app
+    let app_data_dir = app
         .path()
         .app_local_data_dir()
-        .map_err(|err| format!("failed to resolve app data dir: {err}"))?
-        .join("voices");
+        .map_err(|err| format!("failed to resolve app data dir: {err}"))?;
+    let voices_dir = app_data_dir.join("models").join("voices");
     tokio::fs::create_dir_all(&voices_dir)
         .await
         .map_err(|err| format!("failed to create {}: {err}", voices_dir.display()))?;
@@ -77,6 +77,6 @@ fn sanitize_voice_id(id: &str) -> Result<String, String> {
     }
 }
 
-fn path_string(path: &PathBuf) -> String {
+fn path_string(path: &Path) -> String {
     path.as_os_str().to_string_lossy().into_owned()
 }
