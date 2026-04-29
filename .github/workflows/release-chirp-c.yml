@@ -53,15 +53,15 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: chirp-c-cargo-${{ matrix.platform }}-${{ hashFiles('chirp-c/CMakeLists.txt') }}
+          key: chirp-c-cargo-${{ matrix.platform }}-${{ hashFiles('runtimes/qwen/CMakeLists.txt') }}
           restore-keys: |
             chirp-c-cargo-${{ matrix.platform }}-
 
       - name: Cache CMake dependencies
         uses: actions/cache@v4
         with:
-          path: chirp-c/build/_deps
-          key: chirp-c-deps-${{ matrix.platform }}-${{ matrix.backend }}-${{ hashFiles('chirp-c/CMakeLists.txt', 'scripts/build-libs.py', 'scripts/package-libs.py', 'chirp-c/scripts/uv.lock') }}
+          path: runtimes/qwen/build/_deps
+          key: chirp-c-deps-${{ matrix.platform }}-${{ matrix.backend }}-${{ hashFiles('runtimes/qwen/CMakeLists.txt', 'scripts/build-libs.py', 'scripts/package-libs.py', 'runtimes/qwen/scripts/uv.lock') }}
           restore-keys: |
             chirp-c-deps-${{ matrix.platform }}-${{ matrix.backend }}-
 

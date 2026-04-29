@@ -4,7 +4,7 @@ Chirp is split into three layers: a native inference runtime, a Go runner, and a
 
 ## Native Runtime
 
-`chirp-c/` owns model execution. It is a C/C++ library with a small C API in `chirp-c/src/qwen3_tts.h`.
+`runtimes/qwen/` owns model execution. It is a C/C++ library with a small C API in `runtimes/qwen/src/qwen3_tts.h`.
 
 Responsibilities:
 
@@ -15,7 +15,7 @@ Responsibilities:
 
 The C API is the stable boundary. Higher layers should call `qwen3_tts_init`, `qwen3_tts_synthesize_to_file`, and `qwen3_tts_free` instead of reaching into C++ internals.
 
-Release artifacts use `chirp-c-v*` tags:
+Release artifacts use `chirp-c-v*` tags for compatibility:
 
 - `chirp-c-darwin-arm64-metal.tar.gz`
 - `chirp-c-linux-x64-vulkan.tar.gz`
@@ -47,10 +47,10 @@ Responsibilities:
 
 - Provide `chirp speak` for command-line synthesis.
 - Provide `chirp serve` for local HTTP usage.
-- Link against released or locally built `chirp-c` libraries with cgo.
+- Link against released or locally built `runtimes/qwen` libraries with cgo.
 - Keep process/server concerns out of the native runtime.
 
-During development, the runner can link to `chirp-c/build`. Release builds download a pinned `chirp-c` archive into `chirp-runner/third_party/chirp-c` first.
+During development, the runner can link to `runtimes/qwen/build`. Release builds download a pinned Qwen native archive into `chirp-runner/third_party/chirp-c` first.
 
 Runner release artifacts use `chirp-runner-v*` tags:
 

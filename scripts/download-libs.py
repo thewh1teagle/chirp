@@ -55,7 +55,7 @@ def extract(archive: Path, dest: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Download prebuilt chirp-c libraries from GitHub releases")
+    parser = argparse.ArgumentParser(description="Download prebuilt Qwen native libraries from GitHub releases")
     parser.add_argument("--repo", default="thewh1teagle/chirp", help="GitHub repo owner/name")
     parser.add_argument("--version", default="latest", help="release tag or latest")
     parser.add_argument("--tag", help="release tag; overrides --version")

@@ -51,8 +51,12 @@ pub struct LanguagesResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct LoadModelRequest {
+    pub runtime: Option<String>,
     pub model_path: String,
     pub codec_path: String,
+    pub voices_path: Option<String>,
+    pub espeak_data_path: Option<String>,
+    pub voice: Option<String>,
     pub max_tokens: Option<i32>,
     pub temperature: Option<f32>,
     pub top_k: Option<i32>,
@@ -62,6 +66,7 @@ pub struct LoadModelRequest {
 pub struct SpeechRequest {
     pub input: String,
     pub voice_reference: Option<String>,
+    pub voice: Option<String>,
     pub output_path: Option<String>,
     pub language: Option<String>,
 }
@@ -74,8 +79,20 @@ impl RunnerProcess {
             .stderr(Stdio::piped());
         if let Ok(bundle) = model::model_bundle(app) {
             if bundle.installed {
-                cmd.env("CHIRP_MODEL_PATH", bundle.model_path);
-                cmd.env("CHIRP_CODEC_PATH", bundle.codec_path);
+                cmd.env("CHIRP_RUNTIME", &bundle.runtime);
+                cmd.env("CHIRP_MODEL_PATH", &bundle.model_path);
+                if bundle.runtime == "kokoro" {
+                    cmd.env("CHIRP_KOKORO_MODEL_PATH", &bundle.model_path);
+                }
+                if !bundle.codec_path.is_empty() {
+                    cmd.env("CHIRP_CODEC_PATH", &bundle.codec_path);
+                }
+                if let Some(path) = &bundle.voices_path {
+                    cmd.env("CHIRP_KOKORO_VOICES_PATH", path);
+                }
+                if let Some(path) = &bundle.espeak_data_path {
+                    cmd.env("CHIRP_ESPEAK_DATA_PATH", path);
+                }
             }
         }
 
@@ -247,19 +264,45 @@ pub async fn load_model(
     request: LoadModelRequest,
 ) -> Result<serde_json::Value, String> {
     let (client, base_url) = runner_client(&app, &state)?;
-    let mut body = serde_json::json!({
-        "model_path": request.model_path,
-        "codec_path": request.codec_path,
+    let runtime = request.runtime.unwrap_or_else(|| {
+        if request.voices_path.as_deref().is_some_and(|path| !path.is_empty())
+            || request.codec_path.is_empty()
+        {
+            "kokoro".to_string()
+        } else {
+            "qwen".to_string()
+        }
     });
-    if let Some(value) = request.max_tokens {
-        body["max_tokens"] = serde_json::json!(value);
-    }
-    if let Some(value) = request.temperature {
-        body["temperature"] = serde_json::json!(value);
-    }
-    if let Some(value) = request.top_k {
-        body["top_k"] = serde_json::json!(value);
-    }
+    let body = if runtime == "kokoro" {
+        serde_json::json!({
+            "runtime": "kokoro",
+            "kokoro": {
+                "model_path": request.model_path,
+                "voices_path": request.voices_path.unwrap_or_default(),
+                "espeak_data_path": request.espeak_data_path.unwrap_or_default(),
+                "voice": request.voice.unwrap_or_else(|| "af_heart".to_string()),
+                "language": "auto",
+            },
+        })
+    } else {
+        let mut body = serde_json::json!({
+            "runtime": "qwen",
+            "qwen": {
+                "model_path": request.model_path,
+                "codec_path": request.codec_path,
+            },
+        });
+        if let Some(value) = request.max_tokens {
+            body["qwen"]["max_tokens"] = serde_json::json!(value);
+        }
+        if let Some(value) = request.temperature {
+            body["qwen"]["temperature"] = serde_json::json!(value);
+        }
+        if let Some(value) = request.top_k {
+            body["qwen"]["top_k"] = serde_json::json!(value);
+        }
+        body
+    };
 
     let response = client
         .post(format!("{base_url}/v1/models/load"))
@@ -302,6 +345,7 @@ pub async fn synthesize(
     let body = serde_json::json!({
         "input": request.input,
         "voice_reference": request.voice_reference.unwrap_or_default(),
+        "voice": request.voice.unwrap_or_default(),
         "response_format": "wav",
         "language": request.language.unwrap_or_else(|| "auto".to_string()),
     });

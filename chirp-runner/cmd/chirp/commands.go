@@ -41,12 +41,15 @@ func newServeCommand() *cobra.Command {
 				if modelPath == "" || codecPath == "" {
 					return fmt.Errorf("--model and --codec must be provided together")
 				}
-				if err := s.LoadModel(chirpc.Params{
-					ModelPath:   modelPath,
-					CodecPath:   codecPath,
-					MaxTokens:   maxTokens,
-					Temperature: temperature,
-					TopK:        topK,
+				if err := s.LoadModel(server.LoadParams{
+					Runtime: "qwen",
+					Qwen: chirpc.Params{
+						ModelPath:   modelPath,
+						CodecPath:   codecPath,
+						MaxTokens:   maxTokens,
+						Temperature: temperature,
+						TopK:        topK,
+					},
 				}); err != nil {
 					return fmt.Errorf("error loading model: %w", err)
 				}

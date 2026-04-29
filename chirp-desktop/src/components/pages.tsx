@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   AudioLines,
   Bot,
+  Check,
   ChevronRight,
   Download,
   FileAudio,
@@ -22,9 +23,9 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import voiceCatalogJson from "../assets/voices.json";
-import { DownloadedVoice, DownloadProgress, ModelBundle, RunnerInfo, StudioState, VoiceCatalog, VoicePreset } from "../types";
+import { DownloadedVoice, DownloadProgress, ModelBundle, ModelSource, ModelSources, RunnerInfo, StudioState, VoiceCatalog, VoicePreset } from "../types";
 import { cn, formatBytes } from "../utils";
 import { AppFrame } from "./AppFrame";
 import { CreateStatus } from "./CreateStatus";
@@ -34,6 +35,7 @@ import { WaveformPlayer } from "./WaveformPlayer";
 
 const voiceCatalog = voiceCatalogJson as VoiceCatalog;
 type VoiceFilter = "all" | "male" | "female" | "american" | "british";
+type KokoroVoiceFilter = "all" | "male" | "female" | "english" | "spanish" | "french" | "hindi" | "italian" | "portuguese";
 
 const voiceFilters: Array<{ id: VoiceFilter; label: string }> = [
   { id: "all", label: "All" },
@@ -43,10 +45,56 @@ const voiceFilters: Array<{ id: VoiceFilter; label: string }> = [
   { id: "british", label: "🇬🇧 British" },
 ];
 
+const kokoroVoices = [
+  { id: "af_heart", name: "Heart", language: "American English", flag: "🇺🇸", gender: "female", grade: "A" },
+  { id: "af_bella", name: "Bella", language: "American English", flag: "🇺🇸", gender: "female", grade: "A-" },
+  { id: "af_nicole", name: "Nicole", language: "American English", flag: "🇺🇸", gender: "female", grade: "B-" },
+  { id: "af_aoede", name: "Aoede", language: "American English", flag: "🇺🇸", gender: "female", grade: "C+" },
+  { id: "af_kore", name: "Kore", language: "American English", flag: "🇺🇸", gender: "female", grade: "C+" },
+  { id: "af_sarah", name: "Sarah", language: "American English", flag: "🇺🇸", gender: "female", grade: "C+" },
+  { id: "af_nova", name: "Nova", language: "American English", flag: "🇺🇸", gender: "female", grade: "C" },
+  { id: "af_sky", name: "Sky", language: "American English", flag: "🇺🇸", gender: "female", grade: "C-" },
+  { id: "am_michael", name: "Michael", language: "American English", flag: "🇺🇸", gender: "male", grade: "C+" },
+  { id: "am_fenrir", name: "Fenrir", language: "American English", flag: "🇺🇸", gender: "male", grade: "C+" },
+  { id: "am_puck", name: "Puck", language: "American English", flag: "🇺🇸", gender: "male", grade: "C+" },
+  { id: "bf_emma", name: "Emma", language: "British English", flag: "🇬🇧", gender: "female", grade: "B-" },
+  { id: "bf_isabella", name: "Isabella", language: "British English", flag: "🇬🇧", gender: "female", grade: "C" },
+  { id: "bf_alice", name: "Alice", language: "British English", flag: "🇬🇧", gender: "female", grade: "D" },
+  { id: "bm_george", name: "George", language: "British English", flag: "🇬🇧", gender: "male", grade: "C" },
+  { id: "bm_fable", name: "Fable", language: "British English", flag: "🇬🇧", gender: "male", grade: "C" },
+  { id: "bm_lewis", name: "Lewis", language: "British English", flag: "🇬🇧", gender: "male", grade: "D+" },
+  { id: "ef_dora", name: "Dora", language: "Spanish", flag: "🇪🇸", gender: "female" },
+  { id: "em_alex", name: "Alex", language: "Spanish", flag: "🇪🇸", gender: "male" },
+  { id: "em_santa", name: "Santa", language: "Spanish", flag: "🇪🇸", gender: "male" },
+  { id: "ff_siwis", name: "Siwis", language: "French", flag: "🇫🇷", gender: "female", grade: "B-" },
+  { id: "hf_alpha", name: "Alpha", language: "Hindi", flag: "🇮🇳", gender: "female", grade: "C" },
+  { id: "hf_beta", name: "Beta", language: "Hindi", flag: "🇮🇳", gender: "female", grade: "C" },
+  { id: "hm_omega", name: "Omega", language: "Hindi", flag: "🇮🇳", gender: "male", grade: "C" },
+  { id: "hm_psi", name: "Psi", language: "Hindi", flag: "🇮🇳", gender: "male", grade: "C" },
+  { id: "if_sara", name: "Sara", language: "Italian", flag: "🇮🇹", gender: "female", grade: "C" },
+  { id: "im_nicola", name: "Nicola", language: "Italian", flag: "🇮🇹", gender: "male", grade: "C" },
+  { id: "pf_dora", name: "Dora", language: "Brazilian Portuguese", flag: "🇧🇷", gender: "female" },
+  { id: "pm_alex", name: "Alex", language: "Brazilian Portuguese", flag: "🇧🇷", gender: "male" },
+  { id: "pm_santa", name: "Santa", language: "Brazilian Portuguese", flag: "🇧🇷", gender: "male" },
+] as const;
+
+const kokoroVoiceFilters: Array<{ id: KokoroVoiceFilter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "female", label: "Female ♀" },
+  { id: "male", label: "Male ♂" },
+  { id: "english", label: "🇺🇸/🇬🇧 English" },
+  { id: "spanish", label: "🇪🇸 Spanish" },
+  { id: "french", label: "🇫🇷 French" },
+  { id: "hindi", label: "🇮🇳 Hindi" },
+  { id: "italian", label: "🇮🇹 Italian" },
+  { id: "portuguese", label: "🇧🇷 Portuguese" },
+];
+
 type PageProps = {
   bundle: ModelBundle | null;
   setBundle: (bundle: ModelBundle) => void;
 };
+type RuntimeId = ModelBundle["runtime"];
 
 type HomePageProps = PageProps & {
   studio: StudioState;
@@ -55,9 +103,14 @@ type HomePageProps = PageProps & {
 
 export function OnboardPage({ bundle, setBundle }: PageProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [runtime, setRuntime] = useState<RuntimeId>("qwen");
+  const [bundles, setBundles] = useState<Record<RuntimeId, ModelBundle | null>>({ qwen: null, kokoro: null });
+  const [sources, setSources] = useState<ModelSource[]>([]);
   const [progress, setProgress] = useState<DownloadProgress | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const manageMode = new URLSearchParams(location.search).get("manage") === "1";
 
   useEffect(() => {
     const unlisten = listen<DownloadProgress>("model_download_progress", (event) => {
@@ -68,12 +121,49 @@ export function OnboardPage({ bundle, setBundle }: PageProps) {
     };
   }, []);
 
-  async function downloadModel() {
+  useEffect(() => {
+    let cancelled = false;
+    async function refreshBundles() {
+      try {
+        const [qwen, kokoro, modelSources] = await Promise.all([
+          invoke<ModelBundle>("get_model_bundle_for_runtime", { runtime: "qwen" }),
+          invoke<ModelBundle>("get_model_bundle_for_runtime", { runtime: "kokoro" }),
+          invoke<ModelSources>("get_model_sources"),
+        ]);
+        if (cancelled) return;
+        setBundles({ qwen, kokoro });
+        setSources(modelSources.runtimes);
+        const preferredRuntime = (localStorage.getItem("chirp.runtime") as RuntimeId | null) ?? bundle?.runtime;
+        if (preferredRuntime === "qwen" && qwen.installed) {
+          setRuntime("qwen");
+        } else if (preferredRuntime === "kokoro" && kokoro.installed) {
+          setRuntime("kokoro");
+        } else if (qwen.installed) {
+          setRuntime("qwen");
+        } else if (kokoro.installed) {
+          setRuntime("kokoro");
+        }
+      } catch (err) {
+        if (!cancelled) setError(String(err));
+      }
+    }
+    refreshBundles();
+    return () => {
+      cancelled = true;
+    };
+  }, [bundle?.runtime]);
+
+  async function selectRuntime(nextRuntime: RuntimeId) {
     setBusy(true);
     setError("");
     try {
-      const installed = await invoke<ModelBundle>("download_model_bundle");
-      setBundle(installed);
+      setRuntime(nextRuntime);
+      const existing = bundles[nextRuntime];
+      const selected = existing?.installed ? existing : await invoke<ModelBundle>("download_model_bundle", { runtime: nextRuntime });
+      localStorage.setItem("chirp.runtime", selected.runtime);
+      setBundles((current) => ({ ...current, [selected.runtime]: selected }));
+      await invoke("stop_runner").catch(() => undefined);
+      setBundle(selected);
       navigate("/home", { replace: true });
     } catch (err) {
       setError(String(err));
@@ -90,32 +180,94 @@ export function OnboardPage({ bundle, setBundle }: PageProps) {
       ? formatBytes(progress.downloaded)
       : "Starting";
   const stageLabel = progress?.stage === "extracting" ? "Optimizing models..." : "Downloading voice model...";
+  const options = (sources.length ? sources : [
+    { id: "qwen", name: "Qwen", version: "chirp-models-v0.1.3", recommended: true, size: "~900 MB", description: "Voice clone, multilingual, best on Mac GPU", files: [], directory: "chirp-models-q5_0" },
+    { id: "kokoro", name: "Kokoro", version: "kokoro-v1.0", recommended: false, size: "~336 MB", description: "Fast multi-voice speech, lighter setup", files: [], directory: "chirp-kokoro-models-kokoro-v1.0" },
+  ]) as ModelSource[];
 
   return (
     <main className="grid min-h-screen place-items-center bg-background p-6 text-primary sm:p-12">
-      <section className="w-full max-w-[580px]">
+      <section className="w-full max-w-[660px]">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
         >
-          <Brand />
+          <div className="flex items-center justify-between gap-4">
+            <Brand />
+            {manageMode ? (
+              <Link
+                to="/settings"
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-border/50 bg-white px-3 text-[10px] font-black uppercase tracking-[0.16em] text-secondary shadow-sm transition-all hover:border-primary hover:text-primary"
+              >
+                <ChevronRight className="h-3.5 w-3.5 rotate-180" />
+                Back
+              </Link>
+            ) : null}
+          </div>
           <h1 className="mt-8 text-4xl font-semibold tracking-tight text-primary sm:text-5xl">
-            Local voice <br />
-            <span className="text-secondary opacity-40 italic">reimagined.</span>
+            {manageMode ? "Manage voice" : "Local voice"} <br />
+            <span className="text-secondary opacity-40 italic">{manageMode ? "models." : "reimagined."}</span>
           </h1>
           <p className="mt-6 max-w-[480px] text-lg leading-relaxed text-secondary opacity-70">
-            A professional-grade voice engine that runs entirely on your hardware. Total privacy, zero latency.
+            {manageMode
+              ? "Install or switch between local engines. The current runner restarts automatically after a change."
+              : "A professional-grade voice engine that runs entirely on your hardware. Total privacy, zero latency."}
           </p>
 
-          <Card className="mt-12 overflow-hidden border-none bg-white p-0 shadow-2xl">
-            <div className="flex flex-col gap-8 p-8 sm:flex-row sm:items-center sm:justify-between">
+          <Card className="mt-10 overflow-hidden border-none bg-white p-0 shadow-2xl">
+            <div className="grid gap-3 border-b border-border/10 bg-white p-3 sm:grid-cols-2">
+              {options.map((option) => {
+                const installed = !!bundles[option.id]?.installed;
+                const selected = !!bundle?.installed && bundle.runtime === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => setRuntime(option.id)}
+                    className={cn(
+                      "flex min-h-[150px] flex-col justify-between rounded-xl border p-4 text-left transition-all",
+                      runtime === option.id ? "border-primary bg-background/50 shadow-sm ring-1 ring-primary" : "border-border/40 bg-white hover:border-secondary/40",
+                    )}
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-base font-semibold tracking-tight">{option.name}</h3>
+                          <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-secondary opacity-35">{option.size}</p>
+                        </div>
+                        <span
+                          className={cn(
+                            "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[8px] font-bold uppercase tracking-widest",
+                            selected
+                              ? "bg-primary text-white"
+                              : installed
+                                ? "bg-green-50 text-green-700"
+                                : "bg-primary text-white",
+                          )}
+                        >
+                          {selected || installed ? <Check className="h-3 w-3" /> : null}
+                          {selected ? "Selected" : installed ? "Installed" : option.recommended ? "Recommended" : "Lightweight"}
+                        </span>
+                      </div>
+                      <p className="max-w-[220px] text-xs font-semibold leading-5 text-secondary opacity-55">{option.description}</p>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.18em] text-secondary opacity-35">
+                      <div className={cn("h-1.5 w-1.5 rounded-full", runtime === option.id ? "bg-primary" : "bg-secondary/30")} />
+                      Local Runtime
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex flex-col gap-5 bg-background/10 p-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <Eyebrow>Local Infrastructure</Eyebrow>
-                <h3 className="text-base font-semibold tracking-tight">{bundle?.version ?? "chirp-v0.1.3-standard"}</h3>
-                <p className="text-xs text-secondary opacity-40">Initial setup: ~1.3GB storage</p>
+                <h3 className="text-base font-semibold tracking-tight">{bundles[runtime]?.version ?? (runtime === "qwen" ? "chirp-v0.1.3-standard" : "kokoro-v1.0")}</h3>
+                <p className="text-xs text-secondary opacity-40">
+                  {bundles[runtime]?.installed ? "Already installed locally" : `Initial setup: ${runtime === "qwen" ? "~900MB" : "~336MB"} storage`}
+                </p>
               </div>
-              <Button onClick={downloadModel} disabled={busy} className="h-12 px-8 text-sm shadow-lg shadow-primary/5">
+              <Button onClick={() => selectRuntime(runtime)} disabled={busy || (!!bundle?.installed && bundle.runtime === runtime)} className="h-11 px-6 text-sm shadow-lg shadow-primary/5">
                 {busy ? (
                   <span className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -123,8 +275,8 @@ export function OnboardPage({ bundle, setBundle }: PageProps) {
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    Install Models
+                    {bundle?.installed && bundle.runtime === runtime ? <Check className="h-4 w-4" /> : bundles[runtime]?.installed ? <Check className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+                    {bundle?.installed && bundle.runtime === runtime ? "Selected" : bundles[runtime]?.installed ? "Use Model" : "Install Models"}
                   </span>
                 )}
               </Button>
@@ -162,7 +314,7 @@ export function OnboardPage({ bundle, setBundle }: PageProps) {
 
 export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps) {
   const navigate = useNavigate();
-  const { text, referencePath, languages, language, audioPath, audioAutoplayPending, step, status, busy, error } = studio;
+  const { text, referencePath, languages, language, kokoroVoice, audioPath, audioAutoplayPending, step, status, busy, error } = studio;
   const loadingLanguagesRef = useRef(false);
 
   const audioSrc = useMemo(() => (audioPath ? convertFileSrc(audioPath) : ""), [audioPath]);
@@ -178,8 +330,12 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
         await invoke<RunnerInfo>("start_runner");
         await invoke("load_model", {
           request: {
+            runtime: currentBundle.runtime,
             model_path: currentBundle.model_path,
-            codec_path: currentBundle.codec_path,
+            codec_path: currentBundle.codec_path || "",
+            voices_path: currentBundle.voices_path || "",
+            espeak_data_path: currentBundle.espeak_data_path || "",
+            voice: currentBundle.runtime === "kokoro" ? kokoroVoice : "af_heart",
             temperature: 0.9,
             top_k: 50,
           },
@@ -205,7 +361,8 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
   }
 
   async function createVoice() {
-    const current = bundle ?? (await invoke<ModelBundle>("get_model_bundle"));
+    const preferredRuntime = bundle?.runtime ?? localStorage.getItem("chirp.runtime") ?? "qwen";
+    const current = bundle ?? (await invoke<ModelBundle>("get_model_bundle_for_runtime", { runtime: preferredRuntime }));
     setBundle(current);
     if (!current.installed) {
       navigate("/onboard", { replace: true });
@@ -224,8 +381,12 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
       updateStudio({ step: "loading", status: "Loading models..." });
       await invoke("load_model", {
         request: {
+          runtime: current.runtime,
           model_path: current.model_path,
-          codec_path: current.codec_path,
+          codec_path: current.codec_path || "",
+          voices_path: current.voices_path || "",
+          espeak_data_path: current.espeak_data_path || "",
+          voice: current.runtime === "kokoro" ? kokoroVoice : "af_heart",
           temperature: 0.9,
           top_k: 50,
         },
@@ -233,14 +394,15 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
 
       const supportedLanguages = await invoke<string[]>("get_languages");
       updateStudio({ languages: supportedLanguages.length ? supportedLanguages : ["auto"] });
-      const selectedLanguage = supportedLanguages.includes(language) ? language : "auto";
+      const selectedLanguage = current.runtime === "kokoro" ? "auto" : supportedLanguages.includes(language) ? language : "auto";
       if (selectedLanguage !== language) updateStudio({ language: "auto" });
 
       updateStudio({ step: "creating", status: "Generating audio..." });
       const output = await invoke<string>("synthesize", {
         request: {
           input: text,
-          voice_reference: referencePath || null,
+          voice_reference: current.runtime === "kokoro" ? null : referencePath || null,
+          voice: current.runtime === "kokoro" ? kokoroVoice : null,
           language: selectedLanguage,
         },
       });
@@ -258,7 +420,12 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
         <StudioHeader bundle={bundle} />
         <div className="grid gap-12 mt-4 lg:grid-cols-[1fr_360px]">
           <div className="space-y-6">
-            <EditorCard busy={busy} text={text} setText={(nextText) => updateStudio({ text: nextText })} createVoice={createVoice} />
+            <EditorCard
+              busy={busy}
+              text={text}
+              setText={(nextText) => updateStudio({ text: nextText })}
+              createVoice={createVoice}
+            />
 
             <AnimatePresence>
               {audioPath && (
@@ -281,8 +448,11 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
               language={language}
               languages={languages}
               referencePath={referencePath}
+              runtime={bundle?.runtime ?? "qwen"}
+              kokoroVoice={kokoroVoice}
               chooseReference={chooseReference}
               setLanguage={(nextLanguage) => updateStudio({ language: nextLanguage })}
+              setKokoroVoice={(nextVoice) => updateStudio({ kokoroVoice: nextVoice })}
               setReferencePath={(nextPath) => updateStudio({ referencePath: nextPath })}
             />
 
@@ -354,6 +524,19 @@ export function SettingsPage({ bundle }: { bundle: ModelBundle | null }) {
                     <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
                     Live System
                   </div>
+                </div>
+                <div className="flex flex-col gap-4 border-t border-border/10 p-8 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Runtime</p>
+                    <p className="text-sm font-semibold tracking-tight text-primary">{bundle?.runtime === "kokoro" ? "Kokoro" : "Qwen"}</p>
+                  </div>
+                  <Link
+                    to="/onboard?manage=1"
+                    className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-border/80 bg-white px-4 text-xs font-semibold text-primary shadow-sm transition-all hover:border-primary"
+                  >
+                    Change Model
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
               </Card>
             </div>
@@ -491,7 +674,7 @@ function EditorCard({
         placeholder="Paste your script here..."
         onChange={(event) => setText(event.currentTarget.value)}
         disabled={busy}
-        className="min-h-[320px] w-full resize-none bg-white p-8 text-lg leading-relaxed text-primary outline-none placeholder:text-secondary/20 font-medium"
+        className="min-h-[320px] w-full resize-none bg-white p-8 text-left text-lg font-medium leading-relaxed text-primary outline-none placeholder:text-secondary/20"
       />
       <div className="flex items-center justify-between border-t border-border/10 bg-background/10 px-8 py-5">
         <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-40">
@@ -520,22 +703,29 @@ function VoiceSettings({
   language,
   languages,
   referencePath,
+  runtime,
+  kokoroVoice,
   chooseReference,
   setLanguage,
+  setKokoroVoice,
   setReferencePath,
 }: {
   busy: boolean;
   language: string;
   languages: string[];
   referencePath: string;
+  runtime: ModelBundle["runtime"];
+  kokoroVoice: string;
   chooseReference: () => void;
   setLanguage: (language: string) => void;
+  setKokoroVoice: (voice: string) => void;
   setReferencePath: (path: string) => void;
 }) {
   const referenceSrc = useMemo(() => (referencePath ? convertFileSrc(referencePath) : ""), [referencePath]);
   const [voiceBusy, setVoiceBusy] = useState("");
   const [voiceError, setVoiceError] = useState("");
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const selectedKokoroVoice = kokoroVoices.find((voice) => voice.id === kokoroVoice) ?? kokoroVoices[0];
 
   async function choosePresetVoice(voice: VoicePreset) {
     setVoiceBusy(voice.id);
@@ -560,111 +750,151 @@ function VoiceSettings({
       <div className="space-y-5">
         <div className="flex items-center gap-2.5">
           <AudioLines className="h-4 w-4 text-secondary opacity-40" />
-          <Eyebrow className="mb-0">Voice Cloning</Eyebrow>
+          <Eyebrow className="mb-0">{runtime === "kokoro" ? "Voice Preset" : "Voice Cloning"}</Eyebrow>
         </div>
-        <div
-          className={cn(
-            "group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-all hover:bg-background/40",
-            referencePath ? "border-primary bg-background/20" : "border-border/60 hover:border-secondary/30",
-          )}
-          onClick={chooseReference}
-        >
-          {referencePath ? (
-            <div className="text-center w-full space-y-3">
-              <div className="flex justify-between items-center px-1">
-                <div className="invisible h-9 w-9" />
-                <div className="flex-1 flex flex-col items-center">
-                  <div className="h-12 w-12 bg-white rounded-xl shadow-lg flex items-center justify-center mb-3 border border-border/10">
-                    <FileAudio className="h-6 w-6 text-primary" />
-                  </div>
-                  <p className="max-w-[160px] truncate text-xs font-bold tracking-tight text-primary">{referencePath.split(/[\\/]/).pop()}</p>
-                </div>
-                {referenceSrc && <ReferencePlayer src={referenceSrc} />}
+        {runtime === "kokoro" ? (
+          <div className="rounded-xl border border-border/30 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-background text-lg">{selectedKokoroVoice.flag}</div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold tracking-tight text-primary">{selectedKokoroVoice.name}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-secondary opacity-35">{selectedKokoroVoice.language}</p>
               </div>
-              <button
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setReferencePath("");
-                }}
-                className="text-[9px] font-black uppercase tracking-[0.2em] text-secondary opacity-30 hover:text-primary transition-all cursor-pointer"
+              <Button
+                variant="ghost"
+                onClick={() => setLibraryOpen(true)}
+                disabled={busy}
+                className="ml-auto h-8 shrink-0 gap-1.5 rounded-full border border-border/40 bg-white px-3 text-[10px] font-black uppercase tracking-[0.16em] shadow-sm hover:border-primary/30"
               >
-                Clear
-              </button>
+                Change
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
             </div>
-          ) : (
-            <div className="text-center space-y-3">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-lg transition-transform group-hover:scale-105 border border-border/10">
-                <Plus className="h-5 w-5 text-secondary opacity-30" />
-              </div>
-              <div className="space-y-0.5">
-                <p className="text-xs font-bold tracking-tight text-primary">Upload WAV</p>
-                <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Clone any voice</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="h-[1px] bg-border/10" />
-
-      <div className="rounded-xl border border-border/30 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0 space-y-1">
-            <div className="flex items-center gap-2">
-              <UserRound className="h-4 w-4 text-secondary opacity-40" />
-              <p className="text-xs font-bold tracking-tight text-primary">Preset Voices</p>
-            </div>
-            <p className="truncate text-[10px] font-bold uppercase tracking-widest text-secondary opacity-30">
-              {voiceCatalog.voices.length} downloadable references
-            </p>
           </div>
-          <Button
-            variant="ghost"
-            onClick={() => setLibraryOpen(true)}
-            disabled={busy}
-            className="h-8 shrink-0 gap-1.5 rounded-full border border-border/40 bg-white px-3 text-[10px] font-black uppercase tracking-[0.16em] shadow-sm hover:border-primary/30"
+        ) : (
+          <div
+            className={cn(
+              "group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-all hover:bg-background/40",
+              referencePath ? "border-primary bg-background/20" : "border-border/60 hover:border-secondary/30",
+            )}
+            onClick={chooseReference}
           >
-            Select
-            <ChevronRight className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-        {voiceError ? <p className="text-xs font-medium text-red-900">{voiceError}</p> : null}
-      </div>
-
-      <VoiceLibraryDialog
-        busy={busy}
-        open={libraryOpen}
-        voiceBusy={voiceBusy}
-        onClose={() => setLibraryOpen(false)}
-        onChoose={choosePresetVoice}
-      />
-
-      <div className="h-[1px] bg-border/10" />
-
-      <div className="space-y-5">
-        <div className="flex items-center gap-2.5">
-          <Languages className="h-4 w-4 text-secondary opacity-40" />
-          <Eyebrow className="mb-0">Language</Eyebrow>
-        </div>
-        <div className="relative group">
-          <select
-            id="language"
-            value={language}
-            onChange={(event) => setLanguage(event.currentTarget.value)}
-            disabled={busy}
-            className="h-12 w-full appearance-none rounded-xl border border-border/30 bg-white px-4 text-xs font-bold tracking-tight text-primary outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/5 cursor-pointer shadow-sm group-hover:shadow-md"
-          >
-            {languages.map((item) => (
-              <option key={item} value={item}>
-                {item === "auto" ? "Detect Automatically" : item[0].toUpperCase() + item.slice(1)}
-              </option>
-            ))}
-          </select>
-          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 opacity-20 group-hover:opacity-60 transition-opacity">
-            <ChevronRight className="h-3.5 w-3.5 rotate-90" />
+            {referencePath ? (
+              <div className="text-center w-full space-y-3">
+                <div className="flex justify-between items-center px-1">
+                  <div className="invisible h-9 w-9" />
+                  <div className="flex-1 flex flex-col items-center">
+                    <div className="h-12 w-12 bg-white rounded-xl shadow-lg flex items-center justify-center mb-3 border border-border/10">
+                      <FileAudio className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="max-w-[160px] truncate text-xs font-bold tracking-tight text-primary">{referencePath.split(/[\\/]/).pop()}</p>
+                  </div>
+                  {referenceSrc && <ReferencePlayer src={referenceSrc} />}
+                </div>
+                <button
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setReferencePath("");
+                  }}
+                  className="text-[9px] font-black uppercase tracking-[0.2em] text-secondary opacity-30 hover:text-primary transition-all cursor-pointer"
+                >
+                  Clear
+                </button>
+              </div>
+            ) : (
+              <div className="text-center space-y-3">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow-lg transition-transform group-hover:scale-105 border border-border/10">
+                  <Plus className="h-5 w-5 text-secondary opacity-30" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-bold tracking-tight text-primary">Upload WAV</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Clone any voice</p>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
+
+      {runtime === "qwen" ? (
+        <>
+          <div className="h-[1px] bg-border/10" />
+
+          <div className="rounded-xl border border-border/30 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0 space-y-1">
+                <div className="flex items-center gap-2">
+                  <UserRound className="h-4 w-4 text-secondary opacity-40" />
+                  <p className="text-xs font-bold tracking-tight text-primary">Preset Voices</p>
+                </div>
+                <p className="truncate text-[10px] font-bold uppercase tracking-widest text-secondary opacity-30">
+                  {voiceCatalog.voices.length} downloadable references
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                onClick={() => setLibraryOpen(true)}
+                disabled={busy}
+                className="h-8 shrink-0 gap-1.5 rounded-full border border-border/40 bg-white px-3 text-[10px] font-black uppercase tracking-[0.16em] shadow-sm hover:border-primary/30"
+              >
+                Select
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            {voiceError ? <p className="text-xs font-medium text-red-900">{voiceError}</p> : null}
+          </div>
+
+          <VoiceLibraryDialog
+            busy={busy}
+            open={libraryOpen}
+            voiceBusy={voiceBusy}
+            onClose={() => setLibraryOpen(false)}
+            onChoose={choosePresetVoice}
+          />
+        </>
+      ) : null}
+
+      {runtime === "kokoro" ? (
+        <KokoroVoiceDialog
+          busy={busy}
+          open={libraryOpen}
+          selectedVoice={kokoroVoice}
+          onClose={() => setLibraryOpen(false)}
+          onChoose={(voice) => {
+            setKokoroVoice(voice);
+            setLibraryOpen(false);
+          }}
+        />
+      ) : (
+        <>
+          <div className="h-[1px] bg-border/10" />
+
+          <div className="space-y-5">
+            <div className="flex items-center gap-2.5">
+              <Languages className="h-4 w-4 text-secondary opacity-40" />
+              <Eyebrow className="mb-0">Language</Eyebrow>
+            </div>
+            <div className="relative group">
+              <select
+                id="language"
+                value={language}
+                onChange={(event) => setLanguage(event.currentTarget.value)}
+                disabled={busy}
+                className="h-12 w-full appearance-none rounded-xl border border-border/30 bg-white px-4 text-xs font-bold tracking-tight text-primary outline-none transition-all focus:border-primary focus:ring-4 focus:ring-primary/5 cursor-pointer shadow-sm group-hover:shadow-md"
+              >
+                {languages.map((item) => (
+                  <option key={item} value={item}>
+                    {item === "auto" ? "Detect Automatically" : item[0].toUpperCase() + item.slice(1)}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 opacity-20 group-hover:opacity-60 transition-opacity">
+                <ChevronRight className="h-3.5 w-3.5 rotate-90" />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </Card>
   );
 }
@@ -729,11 +959,11 @@ function VoiceLibraryDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/20 p-4 backdrop-blur-sm" onMouseDown={onClose}>
       <div
-        className="w-full max-w-[720px] overflow-hidden rounded-2xl border border-border/30 bg-white shadow-2xl"
+        className="flex h-[min(760px,calc(100vh-32px))] w-full max-w-[720px] flex-col overflow-hidden rounded-2xl border border-border/30 bg-white shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <audio ref={audioRef} onEnded={() => setPreviewVoiceId("")} />
-        <div className="space-y-5 border-b border-border/10 p-6">
+        <div className="shrink-0 space-y-5 border-b border-border/10 p-6">
           <div className="flex items-start justify-between gap-5">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -773,7 +1003,7 @@ function VoiceLibraryDialog({
           </div>
         </div>
 
-        <div className="max-h-[58vh] overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {visibleVoices.map((voice) => (
               <div
@@ -822,6 +1052,117 @@ function VoiceLibraryDialog({
               </div>
             ))}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KokoroVoiceDialog({
+  busy,
+  open,
+  selectedVoice,
+  onClose,
+  onChoose,
+}: {
+  busy: boolean;
+  open: boolean;
+  selectedVoice: string;
+  onClose: () => void;
+  onChoose: (voice: string) => void;
+}) {
+  const [filter, setFilter] = useState<KokoroVoiceFilter>("all");
+  const visibleVoices = useMemo(
+    () =>
+      kokoroVoices.filter((voice) => {
+        if (filter === "all") return true;
+        if (filter === "male" || filter === "female") return voice.gender === filter;
+        if (filter === "english") return voice.language.includes("English");
+        if (filter === "portuguese") return voice.language.includes("Portuguese");
+        return voice.language.toLowerCase().includes(filter);
+      }),
+    [filter],
+  );
+
+  useEffect(() => {
+    if (!open) return;
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/20 p-4 backdrop-blur-sm" onMouseDown={onClose}>
+      <div
+        className="flex h-[min(760px,calc(100vh-32px))] w-full max-w-[720px] flex-col overflow-hidden rounded-2xl border border-border/30 bg-white shadow-2xl"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="shrink-0 space-y-5 border-b border-border/10 p-6">
+          <div className="flex items-start justify-between gap-5">
+            <div className="space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-secondary opacity-35">Kokoro Voices</p>
+              <h3 className="text-2xl font-semibold tracking-tight text-primary">Choose voice</h3>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-border/40 text-secondary opacity-60 transition-all hover:opacity-100"
+              aria-label="Close voice library"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {kokoroVoiceFilters.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setFilter(item.id)}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] transition-all",
+                  filter === item.id ? "border-primary bg-primary text-white" : "border-border/40 bg-white text-secondary opacity-65 hover:opacity-100",
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="grid flex-1 content-start gap-3 overflow-y-auto p-4 sm:grid-cols-2">
+          {visibleVoices.map((voice) => {
+            const selected = voice.id === selectedVoice;
+            return (
+              <button
+                key={voice.id}
+                disabled={busy}
+                onClick={() => onChoose(voice.id)}
+                className={cn(
+                  "rounded-xl border p-4 text-left transition-all hover:border-primary/30 hover:shadow-sm disabled:opacity-60",
+                  selected ? "border-primary bg-background/60" : "border-border/30 bg-white",
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-background text-lg">{voice.flag}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-bold tracking-tight text-primary">{voice.name}</p>
+                      <span className="text-[10px] font-bold text-secondary opacity-45">{voice.gender === "male" ? "♂" : "♀"}</span>
+                    </div>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-secondary opacity-35">{voice.language}</p>
+                    <p className="mt-2 font-mono text-[10px] text-secondary opacity-50">{voice.id}</p>
+                  </div>
+                  {"grade" in voice ? (
+                    <span className="rounded-full border border-border/40 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-secondary opacity-50">
+                      {voice.grade}
+                    </span>
+                  ) : null}
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

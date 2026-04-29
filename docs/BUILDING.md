@@ -3,8 +3,8 @@
 Build the native C/C++ runtime first:
 
 ```console
-cmake -S chirp-c -B chirp-c/build
-cmake --build chirp-c/build -j
+cmake -S runtimes/qwen -B runtimes/qwen/build
+cmake --build runtimes/qwen/build -j
 ```
 
 Or use the packaging script:
@@ -23,12 +23,12 @@ Prepare local GGUF models under the ignored `models/` directory:
 uv run hf download Qwen/Qwen3-TTS-12Hz-0.6B-Base \
   --local-dir models/Qwen3-TTS-12Hz-0.6B-Base
 
-uv run --project chirp-c/scripts python chirp-c/scripts/convert_model_to_gguf.py \
+uv run --project runtimes/qwen/scripts python runtimes/qwen/scripts/convert_model_to_gguf.py \
   --input models/Qwen3-TTS-12Hz-0.6B-Base \
   --output models/qwen3-tts-0.6b-q4_k.gguf \
   --type q4_k
 
-uv run --project chirp-c/scripts python chirp-c/scripts/convert_codec_to_gguf.py \
+uv run --project runtimes/qwen/scripts python runtimes/qwen/scripts/convert_codec_to_gguf.py \
   --input models/Qwen3-TTS-12Hz-0.6B-Base/speech_tokenizer \
   --output models/qwen3-tts-tokenizer-f16.gguf \
   --type f16
@@ -52,7 +52,7 @@ cd chirp-runner
 go build ./cmd/chirp
 ```
 
-The Go runner links to local `chirp-c/build` during development. It also
+The Go runner links to local `runtimes/qwen/build` during development. It also
 checks `chirp-runner/third_party/chirp-c` first, which is where prebuilt release
 libraries are downloaded.
 
@@ -62,12 +62,12 @@ Download prebuilt native libraries from a GitHub release:
 uv run python scripts/download-libs.py --tag chirp-c-v0.3.1 --backend vulkan
 ```
 
-Native library releases use `chirp-c-v*` tags. The release workflow packages
-Linux, macOS, and Windows `chirp-c` archives and uploads them as release
+Native library releases still use `chirp-c-v*` tags for compatibility. The release workflow packages
+Linux, macOS, and Windows Qwen runtime archives and uploads them as release
 assets.
 
 Runner releases use `chirp-runner-v*` tags. The runner release workflow
-downloads a pinned `chirp-c` release, builds the Go `cmd/chirp` binary with
+downloads a pinned `runtimes/qwen` release, builds the Go `cmd/chirp` binary with
 cgo enabled, and uploads platform archives:
 
 ```console
@@ -87,7 +87,7 @@ gh workflow run release-chirp-runner.yml \
 Run checks:
 
 ```console
-uv run --project chirp-c/scripts python -c "import gguf, numpy, torch, safetensors, tqdm"
+uv run --project runtimes/qwen/scripts python -c "import gguf, numpy, torch, safetensors, tqdm"
 
 cd chirp-runner
 go test ./...

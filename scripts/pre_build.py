@@ -94,6 +94,13 @@ def extract_member(data: bytes, archive_name: str, member_name: str) -> bytes:
     raise RuntimeError(f"{member_name} not found in {archive_name}")
 
 
+def extract_optional_member(data: bytes, archive_name: str, member_name: str) -> bytes | None:
+    try:
+        return extract_member(data, archive_name, member_name)
+    except RuntimeError:
+        return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Download the Chirp runner sidecar for Tauri builds")
     parser.add_argument("--target", help="Rust target triple, for example x86_64-unknown-linux-gnu")
@@ -119,11 +126,14 @@ def main() -> int:
     archive_name, member_name = asset
     is_windows = target.endswith("windows-msvc")
     sidecar_name = f"chirp-runner-{target}" + (".exe" if is_windows else "")
+    worker_member_name = "chirp-kokoro-worker.exe" if is_windows else "chirp-kokoro-worker"
+    worker_sidecar_name = f"chirp-kokoro-worker-{target}" + (".exe" if is_windows else "")
     dest_dir = ROOT / "chirp-desktop" / "src-tauri" / "binaries"
     dest = dest_dir / sidecar_name
+    worker_dest = dest_dir / worker_sidecar_name
 
-    if dest.exists():
-        print(f"Chirp runner sidecar already exists at {dest}; skipping download.")
+    if dest.exists() and worker_dest.exists():
+        print(f"Chirp runner sidecars already exist in {dest_dir}; skipping download.")
         return 0
 
     url = f"https://github.com/{args.repo}/releases/download/{tag}/{archive_name}"
@@ -134,13 +144,21 @@ def main() -> int:
         archive_name,
         os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN"),
     )
-    binary = extract_member(data, archive_name, member_name)
 
     dest_dir.mkdir(parents=True, exist_ok=True)
-    dest.write_bytes(binary)
-    if not is_windows:
-        dest.chmod(dest.stat().st_mode | 0o111)
-    print(f"Installed Chirp runner sidecar at {dest}")
+    if not dest.exists():
+        binary = extract_member(data, archive_name, member_name)
+        dest.write_bytes(binary)
+        if not is_windows:
+            dest.chmod(dest.stat().st_mode | 0o111)
+        print(f"Installed Chirp runner sidecar at {dest}")
+    if not worker_dest.exists():
+        worker = extract_optional_member(data, archive_name, worker_member_name)
+        if worker is not None:
+            worker_dest.write_bytes(worker)
+            if not is_windows:
+                worker_dest.chmod(worker_dest.stat().st_mode | 0o111)
+            print(f"Installed Kokoro worker sidecar at {worker_dest}")
     return 0
 
 

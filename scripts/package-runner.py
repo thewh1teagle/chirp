@@ -13,9 +13,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def package(binary: Path, out: Path, platform: str, version: str, chirp_c_tag: str) -> None:
+def package(
+    binary: Path,
+    out: Path,
+    platform: str,
+    version: str,
+    chirp_c_tag: str,
+    worker: Path | None,
+) -> None:
     if not binary.exists():
         raise FileNotFoundError(binary)
+    if worker is not None and not worker.exists():
+        raise FileNotFoundError(worker)
 
     with tempfile.TemporaryDirectory(prefix="chirp-runner-package-") as td:
         stage = Path(td) / out.stem.removesuffix(".tar")
@@ -25,6 +34,11 @@ def package(binary: Path, out: Path, platform: str, version: str, chirp_c_tag: s
         target = stage / target_name
         shutil.copy2(binary, target)
         target.chmod(0o755)
+        if worker is not None:
+            worker_name = "chirp-kokoro-worker.exe" if platform.startswith("windows-") else "chirp-kokoro-worker"
+            worker_target = stage / worker_name
+            shutil.copy2(worker, worker_target)
+            worker_target.chmod(0o755)
 
         (stage / "metadata.json").write_text(
             json.dumps(
@@ -60,8 +74,9 @@ def main() -> None:
     parser.add_argument("--platform", required=True)
     parser.add_argument("--version", required=True)
     parser.add_argument("--chirp-c-tag", required=True)
+    parser.add_argument("--worker", type=Path)
     args = parser.parse_args()
-    package(args.binary, args.out, args.platform, args.version, args.chirp_c_tag)
+    package(args.binary, args.out, args.platform, args.version, args.chirp_c_tag, args.worker)
 
 
 if __name__ == "__main__":

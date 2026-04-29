@@ -63,7 +63,7 @@ def package(quant: str, model: Path, codec: Path, out_dir: Path, version: str) -
                 "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
                 "Qwen/Qwen3-TTS speech_tokenizer",
             ],
-            "runtime": "chirp-c >= v0.3.1",
+            "runtime": "runtimes/qwen >= v0.3.1",
             "files": [],
         }
         for src, dst_name in files:

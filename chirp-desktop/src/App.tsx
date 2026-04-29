@@ -19,6 +19,7 @@ function App() {
     referencePath: "",
     languages: ["auto"],
     language: "auto",
+    kokoroVoice: "af_heart",
     audioPath: "",
     audioAutoplayPending: false,
     step: "idle",
@@ -32,11 +33,26 @@ function App() {
 
     async function boot() {
       try {
-        const current = await invoke<ModelBundle>("get_model_bundle");
+        const [qwen, kokoro] = await Promise.all([
+          invoke<ModelBundle>("get_model_bundle_for_runtime", { runtime: "qwen" }),
+          invoke<ModelBundle>("get_model_bundle_for_runtime", { runtime: "kokoro" }),
+        ]);
         if (cancelled) return;
 
+        const preferredRuntime = localStorage.getItem("chirp.runtime");
+        const current =
+          preferredRuntime === "kokoro" && kokoro.installed
+            ? kokoro
+            : preferredRuntime === "qwen" && qwen.installed
+              ? qwen
+              : qwen.installed
+                ? qwen
+                : kokoro.installed
+                  ? kokoro
+                  : qwen;
         setBundle(current);
-        if (current.installed && ["/", "/onboard"].includes(location.pathname)) navigate("/home", { replace: true });
+        const isManagingModels = location.pathname === "/onboard" && new URLSearchParams(location.search).get("manage") === "1";
+        if (current.installed && ["/", "/onboard"].includes(location.pathname) && !isManagingModels) navigate("/home", { replace: true });
         if (!current.installed && location.pathname !== "/onboard") navigate("/onboard", { replace: true });
       } catch {
         if (!cancelled && location.pathname !== "/onboard") navigate("/onboard", { replace: true });

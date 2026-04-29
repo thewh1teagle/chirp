@@ -16,6 +16,8 @@ _deps/
 dist/
 third_party/
 models/
+target/
+*/target/
 chirp-desktop/src-tauri/binaries/chirp-*
 chirp-desktop/src-tauri/binaries/chirp-runner-*
 *.o

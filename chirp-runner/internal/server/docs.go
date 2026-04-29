@@ -26,6 +26,10 @@ type docsModelsOutput struct {
 	}
 }
 
+type docsModelSourcesOutput struct {
+	Body modelSourcesResponse
+}
+
 type docsLanguagesOutput struct {
 	Body struct {
 		Languages []string         `json:"languages" example:"auto,english,spanish"`
@@ -106,6 +110,16 @@ func (s *Server) registerDocsRoutes(mux *http.ServeMux) {
 		OperationID: "getModelState",
 		Summary:     "Get model state",
 	}, func(context.Context, *struct{}) (*docsModelsOutput, error) {
+		return nil, huma.Error501NotImplemented("spec-only operation")
+	})
+
+	huma.Register(api, huma.Operation{
+		Method:      http.MethodGet,
+		Path:        "/v1/models/sources",
+		OperationID: "getModelSources",
+		Summary:     "Get model download sources",
+		Description: "Returns supported runtimes, model versions, download URLs, and default Chirp Desktop model locations.",
+	}, func(context.Context, *struct{}) (*docsModelSourcesOutput, error) {
 		return nil, huma.Error501NotImplemented("spec-only operation")
 	})
 

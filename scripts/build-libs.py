@@ -54,16 +54,16 @@ def build_vulkan_delay_lib(build_dir: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Build chirp-c native libraries")
+    parser = argparse.ArgumentParser(description="Build runtimes/qwen native libraries")
     parser.add_argument("--backend", default=default_backend(), choices=["cpu", "metal", "vulkan"], help="backend to build")
-    parser.add_argument("--build-dir", type=Path, default=ROOT / "chirp-c" / "build")
+    parser.add_argument("--build-dir", type=Path, default=ROOT / "runtimes/qwen" / "build")
     parser.add_argument("--config", default="Release")
     parser.add_argument("--target", default="chirp-runtime-lib")
     parser.add_argument("--generator", default=default_generator())
     parser.add_argument("--preset-name", default=default_preset())
     args = parser.parse_args()
 
-    src_dir = ROOT / "chirp-c"
+    src_dir = ROOT / "runtimes/qwen"
     args.build_dir.mkdir(parents=True, exist_ok=True)
 
     configure = [

@@ -5,14 +5,14 @@ Native C/C++ Qwen3-TTS runtime and C API.
 Build:
 
 ```console
-cmake -S chirp-c -B chirp-c/build
-cmake --build chirp-c/build -j
+cmake -S runtimes/qwen -B runtimes/qwen/build
+cmake --build runtimes/qwen/build -j
 ```
 
 Run:
 
 ```console
-./chirp-c/build/chirp-runtime \
+./runtimes/qwen/build/chirp-runtime \
   --model models/qwen3-tts-0.6b-f16.gguf \
   --codec models/qwen3-tts-tokenizer-f16.gguf \
   --text "hello" \

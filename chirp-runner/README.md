@@ -5,8 +5,8 @@ Small Go CLI and HTTP runner for the Qwen3-TTS C++ runtime.
 Build the native C runtime first:
 
 ```console
-cmake -S chirp-c -B chirp-c/build
-cmake --build chirp-c/build -j
+cmake -S runtimes/qwen -B runtimes/qwen/build
+cmake --build runtimes/qwen/build -j
 ```
 
 Run one synthesis:

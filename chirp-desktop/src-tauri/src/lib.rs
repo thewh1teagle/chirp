@@ -22,6 +22,8 @@ pub fn run() {
             greet,
             files::reveal_path,
             model::get_model_bundle,
+            model::get_model_bundle_for_runtime,
+            model::get_model_sources,
             model::download_model_bundle,
             runner::start_runner,
             runner::stop_runner,

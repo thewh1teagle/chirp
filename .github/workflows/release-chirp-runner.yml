@@ -118,15 +118,31 @@ jobs:
             -ldflags "-X main.version=${VERSION} -X main.commit=${GITHUB_SHA::8}" \
             ./cmd/chirp
 
+      - name: Build Kokoro worker
+        shell: bash
+        run: |
+          cmake -S runtimes/kokoro -B "dist/kokoro-worker-build-${{ matrix.platform }}" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          cmake --build "dist/kokoro-worker-build-${{ matrix.platform }}" \
+            --target chirp-kokoro-worker \
+            --config Release \
+            -j
+
       - name: Package chirp runner
         shell: bash
         run: |
+          WORKER="dist/kokoro-worker-build-${{ matrix.platform }}/chirp-kokoro-worker"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            WORKER="dist/kokoro-worker-build-${{ matrix.platform }}/Release/chirp-kokoro-worker.exe"
+          fi
           uv run python scripts/package-runner.py \
             --binary "dist/chirp-runner-${{ matrix.platform }}/${{ matrix.binary }}" \
             --out "dist/chirp-runner-${{ matrix.platform }}.${{ matrix.archive_ext }}" \
             --platform "${{ matrix.platform }}" \
             --version "${VERSION}" \
-            --chirp-c-tag "${CHIRP_C_TAG}"
+            --chirp-c-tag "${CHIRP_C_TAG}" \
+            --worker "$WORKER"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

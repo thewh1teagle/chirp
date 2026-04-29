@@ -59,8 +59,8 @@ def make_archive(staging: Path, archive: Path) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Package chirp-c native libraries")
-    parser.add_argument("--build-dir", type=Path, default=ROOT / "chirp-c" / "build")
+    parser = argparse.ArgumentParser(description="Package Qwen native libraries")
+    parser.add_argument("--build-dir", type=Path, default=ROOT / "runtimes/qwen" / "build")
     parser.add_argument("--out-dir", type=Path, default=ROOT / "dist")
     parser.add_argument("--backend", default="cpu")
     parser.add_argument("--platform", default=host_name())
@@ -76,7 +76,7 @@ def main() -> None:
     include_dir.mkdir(parents=True)
     lib_dir.mkdir(parents=True)
 
-    shutil.copy2(ROOT / "chirp-c" / "src" / "qwen3_tts.h", include_dir / "qwen3_tts.h")
+    shutil.copy2(ROOT / "runtimes/qwen" / "src" / "qwen3_tts.h", include_dir / "qwen3_tts.h")
 
     copied: list[str] = []
     copied += copy_matches(args.build_dir, lib_dir, ["libchirp-runtime-lib.a", "chirp-runtime-lib.lib"])

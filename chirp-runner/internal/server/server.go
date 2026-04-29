@@ -15,11 +15,26 @@ import (
 	"time"
 
 	"github.com/thewh1teagle/chirp/chirp-runner/internal/chirpc"
+	"github.com/thewh1teagle/chirp/chirp-runner/internal/kokoroc"
 )
+
+type Runtime interface {
+	Close()
+	Error() string
+	Languages() []chirpc.Language
+	SynthesizeToFile(text, refPath, outputPath, language string) error
+}
+
+type LoadParams struct {
+	Runtime string
+	Qwen    chirpc.Params
+	Kokoro  kokoroc.Params
+}
 
 type Server struct {
 	mu        sync.Mutex
-	ctx       *chirpc.Context
+	ctx       Runtime
+	runtime   string
 	modelName string
 	modelPath string
 	codecPath string
@@ -31,25 +46,47 @@ func New() *Server {
 	return &Server{}
 }
 
-func (s *Server) LoadModel(params chirpc.Params) error {
+func (s *Server) LoadModel(params LoadParams) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.loadModelLocked(params)
 }
 
-func (s *Server) loadModelLocked(params chirpc.Params) error {
+func (s *Server) loadModelLocked(params LoadParams) error {
 	if s.ctx != nil {
 		s.ctx.Close()
 		s.ctx = nil
 	}
-	ctx, err := chirpc.New(params)
+	runtimeName := params.Runtime
+	if runtimeName == "" {
+		runtimeName = "qwen"
+	}
+	var (
+		ctx       Runtime
+		err       error
+		modelPath string
+		codecPath string
+	)
+	switch runtimeName {
+	case "qwen":
+		ctx, err = chirpc.New(params.Qwen)
+		modelPath = params.Qwen.ModelPath
+		codecPath = params.Qwen.CodecPath
+	case "kokoro":
+		ctx, err = kokoroc.New(params.Kokoro)
+		modelPath = params.Kokoro.ModelPath
+		codecPath = params.Kokoro.VoicesPath
+	default:
+		err = fmt.Errorf("unsupported runtime %q", runtimeName)
+	}
 	if err != nil {
 		return err
 	}
 	s.ctx = ctx
-	s.modelPath = params.ModelPath
-	s.codecPath = params.CodecPath
-	s.modelName = filepath.Base(params.ModelPath)
+	s.runtime = runtimeName
+	s.modelPath = modelPath
+	s.codecPath = codecPath
+	s.modelName = filepath.Base(modelPath)
 	return nil
 }
 
@@ -63,6 +100,7 @@ func (s *Server) UnloadModel() {
 	s.modelName = ""
 	s.modelPath = ""
 	s.codecPath = ""
+	s.runtime = ""
 }
 
 func (s *Server) Languages() []chirpc.Language {
@@ -96,6 +134,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /skill", s.handleSkill)
 	mux.HandleFunc("GET /v1/languages", s.handleLanguages)
 	mux.HandleFunc("GET /v1/models", s.handleModels)
+	mux.HandleFunc("GET /v1/models/sources", s.handleModelSources)
 	mux.HandleFunc("POST /v1/models/load", s.handleModelLoad)
 	mux.HandleFunc("DELETE /v1/models", s.handleModelUnload)
 	mux.HandleFunc("POST /v1/audio/speech", s.handleSpeech)

@@ -1,6 +1,6 @@
 {
   "bundle": {
-    "externalBin": ["binaries/chirp-runner"],
+    "externalBin": ["binaries/chirp-runner", "binaries/chirp-kokoro-worker"],
     "macOS": {
       "entitlements": "entitlements.plist",
       "hardenedRuntime": true

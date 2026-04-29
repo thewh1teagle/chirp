@@ -1,10 +1,36 @@
 export type ModelBundle = {
   installed: boolean;
+  runtime: "qwen" | "kokoro";
   model_path: string;
   codec_path: string;
+  voices_path?: string;
+  espeak_data_path?: string;
   model_dir: string;
   version: string;
   url: string;
+};
+
+export type ModelSourceFile = {
+  name: string;
+  url: string;
+};
+
+export type ModelSource = {
+  id: "qwen" | "kokoro";
+  name: string;
+  version: string;
+  recommended: boolean;
+  size: string;
+  description: string;
+  files: ModelSourceFile[];
+  archive_url?: string | null;
+  directory: string;
+};
+
+export type ModelSources = {
+  runtimes: ModelSource[];
+  voices_url: string;
+  default_paths: string[];
 };
 
 export type RunnerInfo = {
@@ -25,6 +51,7 @@ export type StudioState = {
   referencePath: string;
   languages: string[];
   language: string;
+  kokoroVoice: string;
   audioPath: string;
   audioAutoplayPending: boolean;
   step: CreateStep;
