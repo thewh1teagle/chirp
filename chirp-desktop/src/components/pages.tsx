@@ -22,6 +22,7 @@ import {
   Sparkles,
   Terminal,
   UserRound,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
@@ -563,6 +564,7 @@ function VoiceSettings({
   const referenceSrc = useMemo(() => (referencePath ? convertFileSrc(referencePath) : ""), [referencePath]);
   const [voiceBusy, setVoiceBusy] = useState("");
   const [voiceError, setVoiceError] = useState("");
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   async function choosePresetVoice(voice: VoicePreset) {
     setVoiceBusy(voice.id);
@@ -634,40 +636,29 @@ function VoiceSettings({
 
       <div className="h-[1px] bg-border/10" />
 
-      <div className="space-y-5">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <UserRound className="h-4 w-4 text-secondary opacity-40" />
-            <Eyebrow className="mb-0">Voice Library</Eyebrow>
-          </div>
-          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-secondary opacity-30">
-            {voiceCatalog.voices.length} voices
+      <div className="space-y-3">
+        <div className="flex items-center gap-2.5">
+          <UserRound className="h-4 w-4 text-secondary opacity-40" />
+          <Eyebrow className="mb-0">Voice Library</Eyebrow>
+        </div>
+        <Button variant="outline" onClick={() => setLibraryOpen(true)} disabled={busy} className="h-11 w-full justify-between px-4 text-xs">
+          <span className="flex items-center gap-2">
+            <UserRound className="h-4 w-4" />
+            Choose preset voice
           </span>
-        </div>
-        <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto pr-1">
-          {voiceCatalog.voices.map((voice) => (
-            <button
-              key={voice.id}
-              type="button"
-              disabled={busy || !!voiceBusy}
-              onClick={() => choosePresetVoice(voice)}
-              className={cn(
-                "group min-w-0 rounded-xl border border-border/30 bg-white p-3 text-left shadow-sm transition-all hover:border-primary/30 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50",
-                referencePath.endsWith(`${voice.id}.wav`) && "border-primary bg-background/30",
-              )}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <p className="truncate text-xs font-bold tracking-tight text-primary">{voice.name}</p>
-                {voiceBusy === voice.id ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-secondary opacity-40" /> : null}
-              </div>
-              <p className="mt-1 truncate text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">
-                {voice.id.startsWith("british") ? "British" : "American"} / {voice.id.includes("_m_") ? "Male" : "Female"}
-              </p>
-            </button>
-          ))}
-        </div>
+          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-secondary opacity-40">{voiceCatalog.voices.length} voices</span>
+        </Button>
         {voiceError ? <p className="text-xs font-medium text-red-900">{voiceError}</p> : null}
       </div>
+
+      <VoiceLibraryDialog
+        busy={busy}
+        open={libraryOpen}
+        referencePath={referencePath}
+        voiceBusy={voiceBusy}
+        onClose={() => setLibraryOpen(false)}
+        onChoose={choosePresetVoice}
+      />
 
       <div className="h-[1px] bg-border/10" />
 
@@ -696,5 +687,75 @@ function VoiceSettings({
         </div>
       </div>
     </Card>
+  );
+}
+
+function VoiceLibraryDialog({
+  busy,
+  open,
+  referencePath,
+  voiceBusy,
+  onClose,
+  onChoose,
+}: {
+  busy: boolean;
+  open: boolean;
+  referencePath: string;
+  voiceBusy: string;
+  onClose: () => void;
+  onChoose: (voice: VoicePreset) => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/20 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-[720px] overflow-hidden rounded-2xl border border-border/30 bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-5 border-b border-border/10 p-6">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <UserRound className="h-4 w-4 text-secondary opacity-40" />
+              <p className="text-xl font-semibold tracking-tight text-primary">Voice Library</p>
+            </div>
+            <p className="max-w-[460px] text-sm leading-6 text-secondary opacity-60">
+              Preset Kokoro reference voices are downloaded only when selected.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/40 bg-white text-secondary shadow-sm transition-all hover:border-primary hover:text-primary"
+            aria-label="Close voice library"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="max-h-[58vh] overflow-y-auto p-6">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {voiceCatalog.voices.map((voice) => (
+              <button
+                key={voice.id}
+                type="button"
+                disabled={busy || !!voiceBusy}
+                onClick={() => onChoose(voice)}
+                className={cn(
+                  "group min-w-0 rounded-xl border border-border/30 bg-white p-4 text-left shadow-sm transition-all hover:border-primary/30 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50",
+                  referencePath.endsWith(`${voice.id}.wav`) && "border-primary bg-background/30",
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-sm font-bold tracking-tight text-primary">{voice.name}</p>
+                  {voiceBusy === voice.id ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-secondary opacity-40" /> : null}
+                </div>
+                <p className="mt-1 truncate text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">
+                  {voice.id.startsWith("british") ? "British" : "American"} / {voice.id.includes("_m_") ? "Male" : "Female"}
+                </p>
+                <p className="mt-3 line-clamp-2 text-xs leading-5 text-secondary opacity-50">{voice.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
