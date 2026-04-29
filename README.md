@@ -32,7 +32,7 @@
 - Local text-to-speech with Qwen3-TTS
 - Fully offline generation after the model is downloaded
 - Voice cloning from a reference WAV
-- Create speech in 10 supported languages
+- Supported languages: English, Chinese, Japanese, Korean, German, French, Russian, Portuguese, Spanish, Italian, Hindi, and Brazilian Portuguese
 - Audio preview after creation
 - 💻 Desktop support for `macOS`, `Windows`, and `Linux`
 - 🎮 Optimized for `Nvidia` / `AMD` / `Intel` GPUs
