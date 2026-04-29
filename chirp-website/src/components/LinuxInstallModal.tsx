@@ -46,7 +46,7 @@ export function LinuxInstallModal({ command, open, onOpenChange }: LinuxInstallM
           Run this command to download the latest desktop AppImage and install it under <code>~/.local/bin</code>.
         </p>
 
-        <div className="mt-4 flex min-w-0 items-center gap-2 rounded-lg bg-foreground p-2 text-background">
+        <div className="mt-4 flex min-w-0 items-center gap-2 rounded-lg bg-[#EFEFEF] p-2 text-[#111111]">
           <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap px-2 py-1 text-sm">{command}</code>
           <Button variant="secondary" size="sm" onClick={copyCommand}>
             {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
