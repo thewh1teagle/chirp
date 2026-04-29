@@ -2,10 +2,12 @@ import { githubUrl, issuesUrl, releasesUrl } from "@/lib/links"
 
 export function SiteFooter() {
   return (
-    <footer className="mx-auto w-full max-w-5xl px-4 py-6 text-sm text-muted-foreground sm:px-6">
-      <div className="flex flex-col items-center justify-between gap-4 border-t pt-6 sm:flex-row">
-        <span>Chirp</span>
-        <nav className="flex items-center gap-5">
+    <footer className="mx-auto w-full max-w-5xl px-4 py-12 text-sm text-muted-foreground/60 sm:px-6">
+      <div className="flex flex-col items-center justify-between gap-6 border-t border-border/40 pt-12 sm:flex-row">
+        <div className="flex items-center gap-2 font-bold tracking-tight text-foreground/40">
+          <span>Chirp</span>
+        </div>
+        <nav className="flex items-center gap-8 font-medium">
           <a className="transition-colors hover:text-foreground" href={githubUrl} target="_blank" rel="noreferrer">
             GitHub
           </a>
@@ -16,6 +18,9 @@ export function SiteFooter() {
             Issues
           </a>
         </nav>
+      </div>
+      <div className="mt-8 text-center sm:text-left">
+        <p className="text-[12px]">© {new Date().getFullYear()} Chirp. Built for privacy and speed.</p>
       </div>
     </footer>
   )

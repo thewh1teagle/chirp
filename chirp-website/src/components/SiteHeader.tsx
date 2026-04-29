@@ -4,20 +4,25 @@ import { githubUrl } from "@/lib/links"
 
 export function SiteHeader() {
   return (
-    <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-      <a href="/" className="inline-flex items-center gap-2 text-base font-medium">
-        <img src={chirpLogo} alt="" className="size-8 rounded-lg" />
-        <span>Chirp</span>
-      </a>
-      <a
-        href={githubUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        aria-label="Chirp on GitHub"
-      >
-        <GithubIcon className="size-5" />
-      </a>
+    <header className="sticky top-0 z-50 w-full">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
+        <div className="absolute inset-0 -z-10 border-b border-border/40 bg-background/80 backdrop-blur-xl" />
+        
+        <a href="/" className="group inline-flex items-center gap-2.5 text-base font-bold tracking-tight text-foreground">
+          <img src={chirpLogo} alt="" className="size-8 transition-transform group-hover:scale-110" />
+          <span>Chirp</span>
+        </a>
+        
+        <a
+          href={githubUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex size-10 items-center justify-center rounded-2xl text-muted-foreground transition-all hover:bg-white hover:text-foreground hover:shadow-sm hover:ring-1 hover:ring-black/[0.03]"
+          aria-label="Chirp on GitHub"
+        >
+          <GithubIcon className="size-5" />
+        </a>
+      </div>
     </header>
   )
 }

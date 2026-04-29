@@ -6,20 +6,30 @@
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Inter Variable', sans-serif;
-    --color-ring: oklch(0.708 0 0);
-    --color-input: oklch(0.922 0 0);
-    --color-border: oklch(0.922 0 0);
-    --color-destructive: oklch(0.577 0.245 27.325);
-    --color-accent-foreground: oklch(0.205 0 0);
-    --color-accent: oklch(0.97 0 0);
-    --color-muted-foreground: oklch(0.556 0 0);
-    --color-muted: oklch(0.97 0 0);
-    --color-secondary-foreground: oklch(0.205 0 0);
-    --color-secondary: oklch(0.97 0 0);
-    --color-primary-foreground: oklch(0.985 0 0);
-    --color-primary: oklch(0.205 0 0);
-    --color-foreground: oklch(0.145 0 0);
-    --color-background: oklch(1 0 0);
+    
+    /* Desktop App Aligned Palette */
+    --color-background: #FBFBFA;
+    --color-foreground: #111111;
+    
+    --color-primary: #111111;
+    --color-primary-foreground: #FBFBFA;
+    
+    --color-secondary: #EAE8E1;
+    --color-secondary-foreground: #111111;
+    
+    --color-muted: #F0EEE6;
+    --color-muted-foreground: #68645C;
+    
+    --color-accent: #EFEFEF;
+    --color-accent-foreground: #111111;
+    
+    --color-destructive: oklch(0.6 0.18 25);
+    --color-destructive-foreground: oklch(0.98 0.005 30);
+    
+    --color-border: #E2DFD5;
+    --color-input: #E2DFD5;
+    --color-ring: #111111;
+    
     --radius-sm: calc(var(--radius) * 0.6);
     --radius-md: calc(var(--radius) * 0.8);
     --radius-lg: var(--radius);
@@ -30,21 +40,21 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --radius: 0.625rem;
+    --background: #FBFBFA;
+    --foreground: #111111;
+    --primary: #111111;
+    --primary-foreground: #FBFBFA;
+    --secondary: #EAE8E1;
+    --secondary-foreground: #111111;
+    --muted: #F0EEE6;
+    --muted-foreground: #68645C;
+    --accent: #EFEFEF;
+    --accent-foreground: #111111;
+    --destructive: oklch(0.6 0.18 25);
+    --border: #E2DFD5;
+    --input: #E2DFD5;
+    --ring: #111111;
+    --radius: 1rem;
 }
 
 @layer base {
@@ -52,12 +62,21 @@
     @apply border-border outline-ring/50;
     }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
     }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
     }
   html {
     @apply font-sans;
+    }
+}
+
+@layer utilities {
+    .glass {
+        @apply bg-white/70 backdrop-blur-md border border-white/20;
+    }
+    .text-balance {
+        text-wrap: balance;
     }
 }

@@ -41,30 +41,30 @@ export function DownloadCta() {
   }, [isMobile, platform])
 
   return (
-    <>
-      <div className="mt-9 flex w-full max-w-md flex-col items-stretch justify-center gap-3 sm:max-w-none sm:flex-row">
+    <div className="flex flex-col items-center w-full">
+      <div className="mt-4 flex flex-col items-center justify-center gap-4 sm:flex-row">
         {platform === "linux" && !isMobile ? (
-          <Button size="lg" onClick={() => setLinuxModalOpen(true)}>
-            <PlatformIcon platform={platform} className="size-4" />
+          <Button size="lg" className="h-14 w-full sm:w-auto rounded-2xl px-8 text-base shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]" onClick={() => setLinuxModalOpen(true)}>
+            <PlatformIcon platform={platform} className="size-5" />
             {downloadLabel}
           </Button>
         ) : (
-          <Button size="lg" asChild>
+          <Button size="lg" asChild className="h-14 w-full sm:w-auto rounded-2xl px-8 text-base shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]">
             <a href={isMobile ? releasesUrl : asset?.url ?? releasesUrl}>
-              {isMobile ? <Smartphone className="size-4" /> : <PlatformIcon platform={platform} className="size-4" />}
+              {isMobile ? <Smartphone className="size-5" /> : <PlatformIcon platform={platform} className="size-5" />}
               {downloadLabel}
             </a>
           </Button>
         )}
-        <Button variant="outline" size="lg" asChild>
+        <Button variant="outline" size="lg" asChild className="h-14 w-full sm:w-auto rounded-2xl px-8 text-base border-border/60 hover:bg-white hover:border-border transition-all hover:scale-[1.02] active:scale-[0.98]">
           <a href={githubUrl} target="_blank" rel="noreferrer">
-            <GithubIcon className="size-4" />
+            <GithubIcon className="size-5" />
             View on GitHub
           </a>
         </Button>
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-1 rounded-lg border bg-card/70 p-1">
+      <div className="mt-8 flex items-center justify-center gap-1 rounded-[20px] border border-border/40 bg-white/50 p-1 backdrop-blur-sm shadow-sm max-w-fit mx-auto">
         {(Object.keys(platformLabels) as Platform[]).map((option) => (
           <button
             key={option}
@@ -74,26 +74,27 @@ export function DownloadCta() {
               setIsMobile(false)
             }}
             className={cn(
-              "inline-flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-              platform === option && !isMobile && "bg-accent text-foreground"
+              "relative inline-flex h-9 px-4 items-center justify-center rounded-2xl text-[13px] font-semibold text-muted-foreground transition-all duration-300 hover:text-foreground",
+              platform === option && !isMobile ? "bg-white text-foreground shadow-sm ring-1 ring-black/[0.03]" : "hover:bg-black/[0.02]"
             )}
             aria-label={`Select ${platformLabels[option]}`}
           >
-            <PlatformIcon platform={option} />
+            <PlatformIcon platform={option} className="mr-2 size-3.5" />
+            {platformLabels[option]}
           </button>
         ))}
       </div>
 
-      <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-        {isMobile ? <Smartphone className="size-4" /> : <Monitor className="size-4" />}
+      <div className="mt-6 flex items-center justify-center gap-2 text-[13px] font-medium text-muted-foreground/60">
+        {isMobile ? <Smartphone className="size-3.5" /> : <Monitor className="size-3.5" />}
         <span>
           {isMobile
             ? "Available for macOS, Windows, and Linux."
-            : `${latestRelease.version.replace("chirp-desktop-", "")} for ${platformLabels[platform]}.`}
+            : `${latestRelease.version.includes('v') ? latestRelease.version : 'v' + latestRelease.version} for ${platformLabels[platform]}.`}
         </span>
       </div>
 
       <LinuxInstallModal command={installCommand} open={linuxModalOpen} onOpenChange={setLinuxModalOpen} />
-    </>
+    </div>
   )
 }

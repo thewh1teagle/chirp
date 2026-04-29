@@ -6,7 +6,6 @@
       <stop offset="1" stop-color="#4b1bd8"/>
     </linearGradient>
   </defs>
-  <rect width="1024" height="1024" rx="180" fill="#f7f8fb"/>
   <g transform="translate(512 512) scale(0.62) translate(-512 -512)">
     <path
       fill="url(#bird-gradient)"
