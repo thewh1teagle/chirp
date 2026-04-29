@@ -39,10 +39,10 @@ type VoiceFilter = "all" | "male" | "female" | "american" | "british";
 
 const voiceFilters: Array<{ id: VoiceFilter; label: string }> = [
   { id: "all", label: "All" },
-  { id: "female", label: "Female" },
-  { id: "male", label: "Male" },
-  { id: "american", label: "American" },
-  { id: "british", label: "British" },
+  { id: "female", label: "Female ♀" },
+  { id: "male", label: "Male ♂" },
+  { id: "american", label: "American US" },
+  { id: "british", label: "British UK" },
 ];
 
 type PageProps = {
@@ -656,8 +656,13 @@ function VoiceSettings({
               {voiceCatalog.voices.length} downloadable references
             </p>
           </div>
-          <Button variant="secondary" onClick={() => setLibraryOpen(true)} disabled={busy} className="h-9 shrink-0 gap-2 px-3 text-[11px]">
-            Browse
+          <Button
+            variant="ghost"
+            onClick={() => setLibraryOpen(true)}
+            disabled={busy}
+            className="h-8 shrink-0 gap-1.5 rounded-full border border-border/40 bg-white px-3 text-[10px] font-black uppercase tracking-[0.16em] shadow-sm hover:border-primary/30"
+          >
+            Select
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -719,6 +724,8 @@ function VoiceLibraryDialog({
   onChoose: (voice: VoicePreset) => void;
 }) {
   const [filter, setFilter] = useState<VoiceFilter>("all");
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [previewVoiceId, setPreviewVoiceId] = useState("");
   const visibleVoices = useMemo(
     () =>
       voiceCatalog.voices.filter((voice) => {
@@ -731,11 +738,25 @@ function VoiceLibraryDialog({
     [filter],
   );
 
+  function previewVoice(voice: VoicePreset) {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (previewVoiceId === voice.id && !audio.paused) {
+      audio.pause();
+      setPreviewVoiceId("");
+      return;
+    }
+    audio.src = voice.url;
+    audio.play();
+    setPreviewVoiceId(voice.id);
+  }
+
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/20 p-4 backdrop-blur-sm">
       <div className="w-full max-w-[720px] overflow-hidden rounded-2xl border border-border/30 bg-white shadow-2xl">
+        <audio ref={audioRef} onEnded={() => setPreviewVoiceId("")} />
         <div className="space-y-5 border-b border-border/10 p-6">
           <div className="flex items-start justify-between gap-5">
             <div className="space-y-1">
@@ -779,25 +800,44 @@ function VoiceLibraryDialog({
         <div className="max-h-[58vh] overflow-y-auto p-6">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {visibleVoices.map((voice) => (
-              <button
+              <div
                 key={voice.id}
-                type="button"
-                disabled={busy || !!voiceBusy}
-                onClick={() => onChoose(voice)}
                 className={cn(
-                  "group min-w-0 rounded-xl border border-border/30 bg-white p-4 text-left shadow-sm transition-all hover:border-primary/30 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50",
+                  "group min-w-0 rounded-xl border border-border/30 bg-white p-4 text-left shadow-sm transition-all hover:border-primary/30 hover:shadow-md",
+                  (busy || !!voiceBusy) && "opacity-60",
                   referencePath.endsWith(`${voice.id}.wav`) && "border-primary bg-background/30",
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-sm font-bold tracking-tight text-primary">{voice.name}</p>
-                  {voiceBusy === voice.id ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-secondary opacity-40" /> : null}
+                  <button
+                    type="button"
+                    onClick={() => previewVoice(voice)}
+                    disabled={busy || !!voiceBusy}
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border/40 bg-white text-secondary shadow-sm transition-all hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label={`Preview ${voice.name}`}
+                  >
+                    {previewVoiceId === voice.id ? (
+                      <Pause className="h-3.5 w-3.5 fill-current" />
+                    ) : (
+                      <Play className="h-3.5 w-3.5 fill-current" />
+                    )}
+                  </button>
                 </div>
-                <p className="mt-1 truncate text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">
-                  {voice.id.startsWith("british") ? "British" : "American"} / {voice.id.includes("_m_") ? "Male" : "Female"}
+                <p className="mt-1 truncate text-[9px] font-bold uppercase tracking-widest text-secondary opacity-35">
+                  {voice.id.startsWith("british") ? "British UK" : "American US"} / {voice.id.includes("_m_") ? "Male ♂" : "Female ♀"}
                 </p>
                 <p className="mt-3 line-clamp-2 text-xs leading-5 text-secondary opacity-50">{voice.description}</p>
-              </button>
+                <button
+                  type="button"
+                  disabled={busy || !!voiceBusy}
+                  onClick={() => onChoose(voice)}
+                  className="mt-4 flex h-8 w-full items-center justify-center gap-2 rounded-full border border-border/40 bg-white text-[10px] font-black uppercase tracking-[0.16em] text-primary shadow-sm transition-all hover:border-primary/30 hover:bg-background/40 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {voiceBusy === voice.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                  Use Voice
+                </button>
+              </div>
             ))}
           </div>
         </div>
