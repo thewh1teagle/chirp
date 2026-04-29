@@ -751,6 +751,11 @@ function VoiceLibraryDialog({
     setPreviewVoiceId(voice.id);
   }
 
+  async function chooseVoice(voice: VoicePreset) {
+    await onChoose(voice);
+    onClose();
+  }
+
   if (!open) return null;
 
   return (
@@ -827,18 +832,23 @@ function VoiceLibraryDialog({
                     <button
                       type="button"
                       disabled={busy || !!voiceBusy}
-                      onClick={() => onChoose(voice)}
-                      className="flex h-7 items-center justify-center gap-1.5 rounded-full border border-border/40 bg-white px-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-secondary shadow-sm transition-all hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => chooseVoice(voice)}
+                      className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-all disabled:cursor-not-allowed disabled:opacity-50",
+                        referencePath.endsWith(`${voice.id}.wav`)
+                          ? "border-primary bg-primary text-white"
+                          : "border-primary/20 bg-background text-primary hover:border-primary hover:bg-primary hover:text-white",
+                      )}
                       aria-label={`Use ${voice.name}`}
+                      title={`Use ${voice.name}`}
                     >
                       {voiceBusy === voice.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : referencePath.endsWith(`${voice.id}.wav`) ? (
-                        <Check className="h-3.5 w-3.5" />
+                        <Check className="h-4 w-4" />
                       ) : (
-                        <Download className="h-3.5 w-3.5" />
+                        <Download className="h-4 w-4" />
                       )}
-                      {referencePath.endsWith(`${voice.id}.wav`) ? "Used" : "Use"}
                     </button>
                   </div>
                 </div>
