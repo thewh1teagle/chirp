@@ -717,7 +717,7 @@ function VoiceLibraryDialog({
               <p className="text-xl font-semibold tracking-tight text-primary">Voice Library</p>
             </div>
             <p className="max-w-[460px] text-sm leading-6 text-secondary opacity-60">
-              Preset Kokoro reference voices are downloaded only when selected.
+              Preset reference voices are downloaded only when selected.
             </p>
           </div>
           <button
