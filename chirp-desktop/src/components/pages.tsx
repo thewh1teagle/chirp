@@ -41,8 +41,8 @@ const voiceFilters: Array<{ id: VoiceFilter; label: string }> = [
   { id: "all", label: "All" },
   { id: "female", label: "Female ♀" },
   { id: "male", label: "Male ♂" },
-  { id: "american", label: "American US" },
-  { id: "british", label: "British UK" },
+  { id: "american", label: "🇺🇸 American" },
+  { id: "british", label: "🇬🇧 British" },
 ];
 
 type PageProps = {
@@ -810,33 +810,41 @@ function VoiceLibraryDialog({
               >
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-sm font-bold tracking-tight text-primary">{voice.name}</p>
-                  <button
-                    type="button"
-                    onClick={() => previewVoice(voice)}
-                    disabled={busy || !!voiceBusy}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border/40 bg-white text-secondary shadow-sm transition-all hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
-                    aria-label={`Preview ${voice.name}`}
-                  >
-                    {previewVoiceId === voice.id ? (
-                      <Pause className="h-3.5 w-3.5 fill-current" />
-                    ) : (
-                      <Play className="h-3.5 w-3.5 fill-current" />
-                    )}
-                  </button>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => previewVoice(voice)}
+                      disabled={busy || !!voiceBusy}
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-border/40 bg-white text-secondary shadow-sm transition-all hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label={`Preview ${voice.name}`}
+                    >
+                      {previewVoiceId === voice.id ? (
+                        <Pause className="h-3.5 w-3.5 fill-current" />
+                      ) : (
+                        <Play className="h-3.5 w-3.5 fill-current" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy || !!voiceBusy}
+                      onClick={() => onChoose(voice)}
+                      className="flex h-7 w-7 items-center justify-center rounded-full border border-border/40 bg-white text-secondary shadow-sm transition-all hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label={`Use ${voice.name}`}
+                    >
+                      {voiceBusy === voice.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : referencePath.endsWith(`${voice.id}.wav`) ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Download className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <p className="mt-1 truncate text-[9px] font-bold uppercase tracking-widest text-secondary opacity-35">
-                  {voice.id.startsWith("british") ? "British UK" : "American US"} / {voice.id.includes("_m_") ? "Male ♂" : "Female ♀"}
+                  {voice.id.startsWith("british") ? "🇬🇧 British" : "🇺🇸 American"} / {voice.id.includes("_m_") ? "Male ♂" : "Female ♀"}
                 </p>
                 <p className="mt-3 line-clamp-2 text-xs leading-5 text-secondary opacity-50">{voice.description}</p>
-                <button
-                  type="button"
-                  disabled={busy || !!voiceBusy}
-                  onClick={() => onChoose(voice)}
-                  className="mt-4 flex h-8 w-full items-center justify-center gap-2 rounded-full border border-border/40 bg-white text-[10px] font-black uppercase tracking-[0.16em] text-primary shadow-sm transition-all hover:border-primary/30 hover:bg-background/40 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {voiceBusy === voice.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                  Use Voice
-                </button>
               </div>
             ))}
           </div>
