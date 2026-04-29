@@ -162,7 +162,7 @@ export function OnboardPage({ bundle, setBundle }: PageProps) {
 
 export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps) {
   const navigate = useNavigate();
-  const { text, referencePath, languages, language, audioPath, step, status, busy, error } = studio;
+  const { text, referencePath, languages, language, audioPath, audioAutoplayPending, step, status, busy, error } = studio;
   const loadingLanguagesRef = useRef(false);
 
   const audioSrc = useMemo(() => (audioPath ? convertFileSrc(audioPath) : ""), [audioPath]);
@@ -216,7 +216,7 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
       return;
     }
 
-    updateStudio({ busy: true, error: "", audioPath: "" });
+    updateStudio({ busy: true, error: "", audioPath: "", audioAutoplayPending: false });
     try {
       updateStudio({ step: "starting", status: "Initializing Engine..." });
       await invoke<RunnerInfo>("start_runner");
@@ -244,7 +244,7 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
           language: selectedLanguage,
         },
       });
-      updateStudio({ audioPath: output, step: "done", status: "Generation complete." });
+      updateStudio({ audioPath: output, audioAutoplayPending: true, step: "done", status: "Generation complete." });
     } catch (err) {
       updateStudio({ step: "idle", error: String(err), status: "Generation failed." });
     } finally {
@@ -263,7 +263,13 @@ export function HomePage({ bundle, setBundle, studio, setStudio }: HomePageProps
             <AnimatePresence>
               {audioPath && (
                 <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}>
-                  <WaveformPlayer src={audioSrc} sourcePath={audioPath} filename={audioPath.split(/[\\/]/).pop() || "generated-audio.wav"} />
+                  <WaveformPlayer
+                    src={audioSrc}
+                    sourcePath={audioPath}
+                    filename={audioPath.split(/[\\/]/).pop() || "generated-audio.wav"}
+                    autoPlayOnce={audioAutoplayPending}
+                    onAutoPlayConsumed={() => updateStudio({ audioAutoplayPending: false })}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>

@@ -20,6 +20,7 @@ function App() {
     languages: ["auto"],
     language: "auto",
     audioPath: "",
+    audioAutoplayPending: false,
     step: "idle",
     status: "Ready to generate.",
     busy: false,

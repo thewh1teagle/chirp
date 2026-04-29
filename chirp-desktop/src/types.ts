@@ -26,6 +26,7 @@ export type StudioState = {
   languages: string[];
   language: string;
   audioPath: string;
+  audioAutoplayPending: boolean;
   step: CreateStep;
   status: string;
   busy: boolean;

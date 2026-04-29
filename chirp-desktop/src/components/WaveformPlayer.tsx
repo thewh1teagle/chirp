@@ -1,11 +1,23 @@
 import { invoke } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { Download, Pause, Play } from "lucide-react";
-import { useMemo, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Card } from "./ui";
 import { motion } from "framer-motion";
 
-export function WaveformPlayer({ src, sourcePath, filename }: { src: string; sourcePath: string; filename: string }) {
+export function WaveformPlayer({
+  src,
+  sourcePath,
+  filename,
+  autoPlayOnce = false,
+  onAutoPlayConsumed,
+}: {
+  src: string;
+  sourcePath: string;
+  filename: string;
+  autoPlayOnce?: boolean;
+  onAutoPlayConsumed?: () => void;
+}) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const waveformRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
@@ -17,6 +29,12 @@ export function WaveformPlayer({ src, sourcePath, filename }: { src: string; sou
   const [downloading, setDownloading] = useState(false);
   const [savedPath, setSavedPath] = useState("");
   const [downloadError, setDownloadError] = useState("");
+
+  useEffect(() => {
+    if (!autoPlayOnce || !audioRef.current) return;
+    audioRef.current.play().catch(() => setIsPlaying(false));
+    onAutoPlayConsumed?.();
+  }, [autoPlayOnce, onAutoPlayConsumed, src]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;
@@ -124,7 +142,6 @@ export function WaveformPlayer({ src, sourcePath, filename }: { src: string; sou
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onEnded={() => setIsPlaying(false)}
-        autoPlay
       />
 
       <div className="flex items-center gap-4">
