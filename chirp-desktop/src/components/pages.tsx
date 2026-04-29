@@ -356,7 +356,7 @@ If the API returns no_model, ask the user to load or install the Chirp model in 
         <div className="space-y-8">
           <div className="space-y-4">
             <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-secondary opacity-30">Infrastructure & Storage</h3>
-            <Card className="divide-y divide-border/20 overflow-hidden border-none shadow-xl">
+            <Card className="overflow-hidden border-none shadow-xl">
               <div className="flex flex-col gap-8 p-8 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 flex-1 space-y-1">
                   <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Models Directory</p>
@@ -430,12 +430,6 @@ If the API returns no_model, ask the user to load or install the Chirp model in 
                 </div>
               </div>
 
-              <div className="space-y-2 bg-background/10 p-6">
-                <p className="text-[9px] font-bold uppercase tracking-widest text-secondary opacity-30">Agent Skill Prompt</p>
-                <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded-xl border border-border/10 bg-white p-3 text-[10px] leading-5 text-secondary/70">
-                  {agentPrompt}
-                </pre>
-              </div>
             </Card>
           </div>
         </div>
