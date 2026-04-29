@@ -23,7 +23,7 @@
 
 <p align="center">
   <a target="_blank" href="https://thewh1teagle.github.io/chirp/">
-    <img width="800" alt="Chirp desktop screenshot" src="https://github.com/user-attachments/assets/6f8fca35-bf3b-4bdb-bdcc-1c52f535e04d" />
+    <img width="800" alt="Chirp desktop screenshot" src="https://github.com/user-attachments/assets/dc83a3a1-20f9-4825-9425-1f113c8a5321" />
   </a>
 </p>
 
