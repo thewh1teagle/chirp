@@ -96,6 +96,16 @@ For voice cloning, pass a reference WAV:
 
 The output is a WAV file.
 
+## Preset Voices
+
+Bundled voice presets are listed in the Chirp source tree at:
+
+```console
+chirp-desktop/src/assets/voices.json
+```
+
+Each entry includes an `id`, `name`, `description`, `lang`, and `url`. Download the preset WAV from `url`, then pass the downloaded local file path as `voice_reference`.
+
 ## Use HTTP Server
 
 Use the server for repeated requests because it keeps the model loaded:
