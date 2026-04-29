@@ -672,7 +672,6 @@ function VoiceSettings({
       <VoiceLibraryDialog
         busy={busy}
         open={libraryOpen}
-        referencePath={referencePath}
         voiceBusy={voiceBusy}
         onClose={() => setLibraryOpen(false)}
         onChoose={choosePresetVoice}
@@ -711,14 +710,12 @@ function VoiceSettings({
 function VoiceLibraryDialog({
   busy,
   open,
-  referencePath,
   voiceBusy,
   onClose,
   onChoose,
 }: {
   busy: boolean;
   open: boolean;
-  referencePath: string;
   voiceBusy: string;
   onClose: () => void;
   onChoose: (voice: VoicePreset) => void;
@@ -810,7 +807,6 @@ function VoiceLibraryDialog({
                 className={cn(
                   "group min-w-0 rounded-xl border border-border/30 bg-white p-4 text-left shadow-sm transition-all hover:border-primary/30 hover:shadow-md",
                   (busy || !!voiceBusy) && "opacity-60",
-                  referencePath.endsWith(`${voice.id}.wav`) && "border-primary bg-background/30",
                 )}
               >
                 <div className="flex items-center justify-between gap-2">
