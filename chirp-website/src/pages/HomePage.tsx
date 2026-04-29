@@ -2,6 +2,7 @@ import chirpLogo from "@/assets/chirp-logo.svg"
 import { DownloadCta } from "@/components/DownloadCta"
 import { SiteFooter } from "@/components/SiteFooter"
 import { SiteHeader } from "@/components/SiteHeader"
+import { StudioPreview } from "@/components/StudioPreview"
 
 export function HomePage() {
   return (
@@ -46,6 +47,8 @@ export function HomePage() {
                 ))}
             </div>
         </section>
+
+        <StudioPreview />
       </main>
 
       <SiteFooter />
