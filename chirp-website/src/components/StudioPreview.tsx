@@ -2,8 +2,8 @@ import studioPreview from "@/assets/studio-preview.png"
 
 export function StudioPreview() {
   return (
-    <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
-      <div className="grid items-center gap-10 lg:grid-cols-[0.82fr_1.18fr]">
+    <section className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-18">
+      <div className="grid items-center gap-10 lg:grid-cols-[0.72fr_1.28fr]">
         <div className="max-w-xl">
           <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
             Desktop Studio
@@ -18,11 +18,11 @@ export function StudioPreview() {
         </div>
 
         <div className="relative">
-          <div className="absolute inset-x-8 bottom-0 -z-10 h-28 rounded-full bg-black/15 blur-3xl" />
+          <div className="absolute inset-x-8 bottom-0 -z-10 h-30 rounded-full bg-black/15 blur-3xl" />
           <img
             src={studioPreview}
             alt="Chirp desktop studio with text input, generate button, and audio preview"
-            className="w-full rounded-[2rem] border border-white/70 shadow-2xl shadow-black/20"
+            className="w-full rounded-[1.75rem] border border-white/70 shadow-2xl shadow-black/20 sm:rounded-[2.25rem]"
             loading="lazy"
           />
         </div>
