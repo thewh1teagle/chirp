@@ -92,72 +92,117 @@ pub async fn download_model_bundle(
     runtime: Option<String>,
 ) -> Result<ModelBundle, String> {
     let runtime = runtime.unwrap_or_else(|| "qwen".to_string());
+    crate::analytics::track_event_handle_with_props(
+        &app,
+        crate::analytics::events::MODEL_DOWNLOAD_STARTED,
+        Some(serde_json::json!({ "runtime": runtime })),
+    );
     if runtime == "kokoro" {
-        return download_kokoro_bundle(app).await;
+        return match download_kokoro_bundle(app.clone()).await {
+            Ok(bundle) => {
+                crate::analytics::track_event_handle_with_props(
+                    &app,
+                    crate::analytics::events::MODEL_DOWNLOAD_SUCCEEDED,
+                    Some(serde_json::json!({ "runtime": "kokoro" })),
+                );
+                Ok(bundle)
+            }
+            Err(err) => {
+                crate::analytics::track_event_handle_with_props(
+                    &app,
+                    crate::analytics::events::MODEL_DOWNLOAD_FAILED,
+                    Some(serde_json::json!({ "runtime": "kokoro" })),
+                );
+                Err(err)
+            }
+        };
     }
-    let bundle = qwen_bundle(&app)?;
-    if bundle.installed {
-        return Ok(bundle);
+    let result = async {
+        let bundle = qwen_bundle(&app)?;
+        if bundle.installed {
+            return Ok(bundle);
+        }
+
+        let models_root = models_root(&app)?;
+        tokio::fs::create_dir_all(&models_root)
+            .await
+            .map_err(|err| format!("failed to create {}: {err}", models_root.display()))?;
+        let dir = model_dir(&app)?;
+        tokio::fs::create_dir_all(&dir)
+            .await
+            .map_err(|err| format!("failed to create {}: {err}", dir.display()))?;
+
+        let client = reqwest::Client::builder()
+            .no_proxy()
+            .build()
+            .map_err(|err| format!("failed to build HTTP client: {err}"))?;
+        let mut downloaded = 0_u64;
+        let source = runtime_source("qwen").ok_or_else(|| "missing qwen source".to_string())?;
+        let model_url = source
+            .files
+            .iter()
+            .find(|file| file.name == MODEL_FILE)
+            .map(|file| file.url.clone())
+            .ok_or_else(|| "missing qwen model source URL".to_string())?;
+        let codec_url = source
+            .files
+            .iter()
+            .find(|file| file.name == CODEC_FILE)
+            .map(|file| file.url.clone())
+            .ok_or_else(|| "missing qwen codec source URL".to_string())?;
+        let model_total = remote_content_length(&client, &model_url).await;
+        let codec_total = remote_content_length(&client, &codec_url).await;
+        let total = match (model_total, codec_total) {
+            (Some(model), Some(codec)) => Some(model + codec),
+            _ => None,
+        };
+
+        download_model_file(
+            &app,
+            &client,
+            &model_url,
+            &dir.join(MODEL_FILE),
+            &mut downloaded,
+            total,
+        )
+        .await?;
+        download_model_file(
+            &app,
+            &client,
+            &codec_url,
+            &dir.join(CODEC_FILE),
+            &mut downloaded,
+            total,
+        )
+        .await?;
+
+        let bundle = qwen_bundle(&app)?;
+        if !bundle.installed {
+            return Err(
+                "model files downloaded, but expected GGUF files were not found".to_string(),
+            );
+        }
+        Ok(bundle)
     }
-
-    let models_root = models_root(&app)?;
-    tokio::fs::create_dir_all(&models_root)
-        .await
-        .map_err(|err| format!("failed to create {}: {err}", models_root.display()))?;
-    let dir = model_dir(&app)?;
-    tokio::fs::create_dir_all(&dir)
-        .await
-        .map_err(|err| format!("failed to create {}: {err}", dir.display()))?;
-
-    let client = reqwest::Client::builder()
-        .no_proxy()
-        .build()
-        .map_err(|err| format!("failed to build HTTP client: {err}"))?;
-    let mut downloaded = 0_u64;
-    let source = runtime_source("qwen").ok_or_else(|| "missing qwen source".to_string())?;
-    let model_url = source
-        .files
-        .iter()
-        .find(|file| file.name == MODEL_FILE)
-        .map(|file| file.url.clone())
-        .ok_or_else(|| "missing qwen model source URL".to_string())?;
-    let codec_url = source
-        .files
-        .iter()
-        .find(|file| file.name == CODEC_FILE)
-        .map(|file| file.url.clone())
-        .ok_or_else(|| "missing qwen codec source URL".to_string())?;
-    let model_total = remote_content_length(&client, &model_url).await;
-    let codec_total = remote_content_length(&client, &codec_url).await;
-    let total = match (model_total, codec_total) {
-        (Some(model), Some(codec)) => Some(model + codec),
-        _ => None,
-    };
-
-    download_model_file(
-        &app,
-        &client,
-        &model_url,
-        &dir.join(MODEL_FILE),
-        &mut downloaded,
-        total,
-    )
-    .await?;
-    download_model_file(
-        &app,
-        &client,
-        &codec_url,
-        &dir.join(CODEC_FILE),
-        &mut downloaded,
-        total,
-    )
-    .await?;
-
-    let bundle = qwen_bundle(&app)?;
-    if !bundle.installed {
-        return Err("model files downloaded, but expected GGUF files were not found".to_string());
+    .await;
+    match result {
+        Ok(bundle) => {
+            crate::analytics::track_event_handle_with_props(
+                &app,
+                crate::analytics::events::MODEL_DOWNLOAD_SUCCEEDED,
+                Some(serde_json::json!({ "runtime": "qwen" })),
+            );
+            Ok(bundle)
+        }
+        Err(err) => {
+            crate::analytics::track_event_handle_with_props(
+                &app,
+                crate::analytics::events::MODEL_DOWNLOAD_FAILED,
+                Some(serde_json::json!({ "runtime": "qwen" })),
+            );
+            Err(err)
+        }
     }
-    Ok(bundle)
 }
 
 pub fn model_bundle(app: &tauri::AppHandle) -> Result<ModelBundle, String> {
@@ -215,7 +260,9 @@ fn kokoro_bundle(app: &tauri::AppHandle) -> Result<ModelBundle, String> {
         espeak_data_path: Some(path_string(&espeak_data_path)),
         model_dir: path_string(&dir),
         version: source.version,
-        url: source.archive_url.unwrap_or_else(|| KOKORO_BUNDLE_URL.to_string()),
+        url: source
+            .archive_url
+            .unwrap_or_else(|| KOKORO_BUNDLE_URL.to_string()),
     })
 }
 

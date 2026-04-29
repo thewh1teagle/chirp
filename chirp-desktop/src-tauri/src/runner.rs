@@ -265,7 +265,10 @@ pub async fn load_model(
 ) -> Result<serde_json::Value, String> {
     let (client, base_url) = runner_client(&app, &state)?;
     let runtime = request.runtime.unwrap_or_else(|| {
-        if request.voices_path.as_deref().is_some_and(|path| !path.is_empty())
+        if request
+            .voices_path
+            .as_deref()
+            .is_some_and(|path| !path.is_empty())
             || request.codec_path.is_empty()
         {
             "kokoro".to_string()
@@ -342,29 +345,45 @@ pub async fn synthesize(
 ) -> Result<String, String> {
     let (client, base_url) = runner_client(&app, &state)?;
     let output_path = request.output_path.unwrap_or_else(default_output_path);
+    let language = request.language.unwrap_or_else(|| "auto".to_string());
+    crate::analytics::track_event_handle_with_props(
+        &app,
+        crate::analytics::events::SPEECH_STARTED,
+        Some(serde_json::json!({ "language": language })),
+    );
     let body = serde_json::json!({
         "input": request.input,
         "voice_reference": request.voice_reference.unwrap_or_default(),
         "voice": request.voice.unwrap_or_default(),
         "response_format": "wav",
-        "language": request.language.unwrap_or_else(|| "auto".to_string()),
+        "language": language,
     });
 
     let response = client
         .post(format!("{base_url}/v1/audio/speech"))
         .json(&body)
         .send()
-        .await
-        .map_err(|err| format!("failed to send speech request: {err}"))?;
+        .await;
+    let response = match response {
+        Ok(response) => response,
+        Err(err) => {
+            crate::analytics::track_event_handle(&app, crate::analytics::events::SPEECH_FAILED);
+            return Err(format!("failed to send speech request: {err}"));
+        }
+    };
     if !response.status().is_success() {
+        crate::analytics::track_event_handle(&app, crate::analytics::events::SPEECH_FAILED);
         return Err(response_error(response).await);
     }
 
-    let bytes = response
-        .bytes()
-        .await
-        .map_err(|err| format!("failed to read speech response: {err}"))?;
-    tauri::async_runtime::spawn_blocking({
+    let bytes = match response.bytes().await {
+        Ok(bytes) => bytes,
+        Err(err) => {
+            crate::analytics::track_event_handle(&app, crate::analytics::events::SPEECH_FAILED);
+            return Err(format!("failed to read speech response: {err}"));
+        }
+    };
+    let write_result = tauri::async_runtime::spawn_blocking({
         let output_path = output_path.clone();
         move || {
             std::fs::write(&output_path, bytes)
@@ -372,7 +391,13 @@ pub async fn synthesize(
         }
     })
     .await
-    .map_err(|err| format!("failed to join file write task: {err}"))??;
+    .map_err(|err| format!("failed to join file write task: {err}"))
+    .and_then(|result| result);
+    if let Err(err) = write_result {
+        crate::analytics::track_event_handle(&app, crate::analytics::events::SPEECH_FAILED);
+        return Err(err);
+    }
+    crate::analytics::track_event_handle(&app, crate::analytics::events::SPEECH_SUCCEEDED);
     Ok(output_path)
 }
 
@@ -432,7 +457,16 @@ fn ensure_runner(app: &tauri::AppHandle, state: &State<'_, RunnerState>) -> Resu
     }
 
     let binary_path = resolve_runner_binary(app)?;
-    let process = RunnerProcess::spawn(app, &binary_path)?;
+    let process = match RunnerProcess::spawn(app, &binary_path) {
+        Ok(process) => process,
+        Err(err) => {
+            crate::analytics::track_event_handle(
+                app,
+                crate::analytics::events::RUNNER_START_FAILED,
+            );
+            return Err(err);
+        }
+    };
     let base_url = process.base_url();
     *guard = Some(process);
     Ok(base_url)
