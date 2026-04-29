@@ -12,10 +12,10 @@
 </p>
 
 <p align="center">
-  <a target="_blank" href="https://thewh1teagle.github.io/chirp/">Download Chirp</a>
-  &nbsp; | &nbsp;
-  <a target="_blank" href="https://github.com/thewh1teagle/chirp">Give it a Star ⭐</a>
-  &nbsp; | &nbsp;
+  <a target="_blank" href="https://thewh1teagle.github.io/chirp/">
+    🔗 Download Chirp
+  </a>
+  &nbsp; | &nbsp; Give it a Star ⭐ | &nbsp;
   <a target="_blank" href="https://github.com/sponsors/thewh1teagle">Support the project 🤝</a>
 </p>
 
