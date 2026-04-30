@@ -1,5 +1,6 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getVersion } from "@tauri-apps/api/app";
 import { open } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { AnimatePresence, motion } from "framer-motion";
@@ -591,6 +592,12 @@ function StudioHeader({ bundle }: { bundle: ModelBundle | null }) {
 }
 
 function WorkspaceHeader({ bundle, active }: { bundle: ModelBundle | null; active: "studio" | "api" }) {
+  const [appVersion, setAppVersion] = useState("");
+
+  useEffect(() => {
+    getVersion().then(setAppVersion).catch(() => undefined);
+  }, []);
+
   return (
     <header className="flex h-[88px] items-center justify-between">
       <div className="flex items-center gap-6">
@@ -599,7 +606,7 @@ function WorkspaceHeader({ bundle, active }: { bundle: ModelBundle | null; activ
       </div>
       <div className="flex items-center gap-4">
         <span className="text-[10px] font-medium tracking-widest text-secondary opacity-40 uppercase">
-          {bundle?.version.split("-").pop() ?? "v0.1.3"}
+          {bundle?.version.split("-").pop() ?? appVersion}
         </span>
         <Link to="/settings" className="flex h-8 w-8 items-center justify-center rounded-full border border-border/60 text-secondary transition-all hover:border-primary hover:text-primary">
           <Settings className="h-4 w-4" />
