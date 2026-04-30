@@ -26,12 +26,13 @@ type Params struct {
 }
 
 type Context struct {
-	cmd    *exec.Cmd
-	stdin  io.WriteCloser
-	reader *bufio.Reader
-	mu     sync.Mutex
-	nextID int
-	err    string
+	cmd        *exec.Cmd
+	stdin      io.WriteCloser
+	reader     *bufio.Reader
+	mu         sync.Mutex
+	nextID     int
+	err        string
+	voicesPath string
 }
 
 type response struct {
@@ -39,6 +40,7 @@ type response struct {
 	OK        bool     `json:"ok"`
 	Error     string   `json:"error,omitempty"`
 	Languages []string `json:"languages,omitempty"`
+	Voices    []string `json:"voices,omitempty"`
 }
 
 func New(params Params) (*Context, error) {
@@ -67,10 +69,11 @@ func New(params Params) (*Context, error) {
 		return nil, err
 	}
 	ctx := &Context{
-		cmd:    cmd,
-		stdin:  stdin,
-		reader: bufio.NewReader(stdout),
-		nextID: 1,
+		cmd:        cmd,
+		stdin:      stdin,
+		reader:     bufio.NewReader(stdout),
+		nextID:     1,
+		voicesPath: params.VoicesPath,
 	}
 	if err := ctx.call(map[string]any{
 		"method":           "load",
@@ -115,6 +118,19 @@ func (c *Context) Languages() []chirpc.Language {
 		return kokoroLanguages([]string{"en-us", "en", "es", "fr", "ja", "hi", "it", "pt-br"})
 	}
 	return kokoroLanguages(resp.Languages)
+}
+
+func (c *Context) Voices() []string {
+	var resp response
+	payload := map[string]any{"method": "voices"}
+	if c != nil && c.voicesPath != "" {
+		payload["voices_path"] = c.voicesPath
+	}
+	if err := c.call(payload, &resp); err != nil {
+		c.err = err.Error()
+		return nil
+	}
+	return resp.Voices
 }
 
 func (c *Context) SynthesizeToFile(text, voice string, outputPath, language string) error {

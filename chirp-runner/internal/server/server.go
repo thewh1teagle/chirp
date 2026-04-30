@@ -22,6 +22,7 @@ type Runtime interface {
 	Close()
 	Error() string
 	Languages() []chirpc.Language
+	Voices() []string
 	SynthesizeToFile(text, refPath, outputPath, language string) error
 }
 
@@ -112,6 +113,15 @@ func (s *Server) Languages() []chirpc.Language {
 	return s.ctx.Languages()
 }
 
+func (s *Server) Voices() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.ctx == nil {
+		return nil
+	}
+	return s.ctx.Voices()
+}
+
 func (s *Server) Close() {
 	s.UnloadModel()
 }
@@ -133,6 +143,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /health", s.handleHealth)
 	mux.HandleFunc("GET /skill", s.handleSkill)
 	mux.HandleFunc("GET /v1/languages", s.handleLanguages)
+	mux.HandleFunc("GET /v1/voices", s.handleVoices)
 	mux.HandleFunc("GET /v1/models", s.handleModels)
 	mux.HandleFunc("GET /v1/models/sources", s.handleModelSources)
 	mux.HandleFunc("POST /v1/models/load", s.handleModelLoad)

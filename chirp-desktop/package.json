@@ -17,11 +17,14 @@
     "@tauri-apps/plugin-dialog": "^2.7.0",
     "@tauri-apps/plugin-http": "^2",
     "@tauri-apps/plugin-opener": "^2",
+    "clsx": "^2.1.1",
+    "filesize": "^11.0.17",
     "framer-motion": "^12.4.7",
     "lucide-react": "^0.477.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "7.14.2",
+    "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.4"
   },
   "devDependencies": {

@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import { ComponentProps, ReactNode } from "react";
 import chirpLogo from "../assets/chirp-logo.svg";
-import { cn } from "../utils";
+import { cn } from "../lib/classNames";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "outline";
 

@@ -4,10 +4,13 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
-import { AgentsPage, HomePage, OnboardPage, SettingsPage } from "./components/pages";
 import { Brand } from "./components/ui";
-import { ModelBundle, StudioState } from "./types";
-import { sampleText } from "./utils";
+import { AgentsPage } from "./pages/AgentsPage";
+import { HomePage } from "./pages/home/HomePage";
+import { OnboardPage } from "./pages/OnboardPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { ModelBundle, StudioState } from "./lib/types";
+import { sampleText } from "./lib/constants";
 
 function App() {
   const location = useLocation();
@@ -20,6 +23,7 @@ function App() {
     languages: ["auto"],
     language: "auto",
     kokoroVoice: "af_heart",
+    kokoroVoiceIds: [],
     audioPath: "",
     audioAutoplayPending: false,
     step: "idle",

@@ -4,8 +4,8 @@ import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { Check, Clipboard, ExternalLink, Loader2, Server, Terminal } from "lucide-react";
 import { useState } from "react";
-import { RunnerInfo } from "../../types";
-import { cn } from "../../utils";
+import { RunnerInfo } from "../../lib/types";
+import { cn } from "../../lib/classNames";
 import { Button, Card, ErrorBlock } from "../ui";
 
 export function AgentsPanel() {

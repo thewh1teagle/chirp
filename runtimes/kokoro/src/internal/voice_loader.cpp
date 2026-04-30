@@ -7,6 +7,7 @@
 #include <cstring>
 #include <exception>
 #include <fstream>
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -136,6 +137,38 @@ bool load_voice_from_archive(
         error = "failed to parse voice `" + voice + "` from " + voices_path + ": " + e.what();
         return false;
     }
+}
+
+bool list_voices_from_archive(
+    const std::string & voices_path,
+    std::vector<std::string> & out,
+    std::string & error) {
+    mz_zip_archive zip = {};
+    if (!mz_zip_reader_init_file(&zip, voices_path.c_str(), 0)) {
+        error = "failed to open voices archive: " + voices_path;
+        return false;
+    }
+
+    mz_uint count = mz_zip_reader_get_num_files(&zip);
+    out.clear();
+    out.reserve(count);
+    for (mz_uint i = 0; i < count; ++i) {
+        mz_zip_archive_file_stat stat = {};
+        if (!mz_zip_reader_file_stat(&zip, i, &stat)) {
+            mz_zip_reader_end(&zip);
+            error = "failed to read voices archive entry";
+            return false;
+        }
+        std::string name = stat.m_filename;
+        if (name.size() <= 4 || name.substr(name.size() - 4) != ".npy") {
+            continue;
+        }
+        name.resize(name.size() - 4);
+        out.push_back(name);
+    }
+    mz_zip_reader_end(&zip);
+    std::sort(out.begin(), out.end());
+    return true;
 }
 
 }

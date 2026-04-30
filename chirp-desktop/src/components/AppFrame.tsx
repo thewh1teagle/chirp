@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { ModelBundle } from "../types";
+import { ModelBundle } from "../lib/types";
 
 export function AppFrame({ children }: { bundle: ModelBundle | null; children: ReactNode }) {
   return (

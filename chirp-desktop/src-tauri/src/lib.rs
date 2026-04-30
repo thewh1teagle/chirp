@@ -32,6 +32,7 @@ pub fn run() {
             runner::get_runner_url,
             runner::load_model,
             runner::get_languages,
+            runner::get_voices,
             runner::synthesize,
             runner::copy_audio_file,
             voices::download_voice,

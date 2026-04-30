@@ -18,4 +18,9 @@ bool load_voice_from_archive(
     VoiceData & out,
     std::string & error);
 
+bool list_voices_from_archive(
+    const std::string & voices_path,
+    std::vector<std::string> & out,
+    std::string & error);
+
 }

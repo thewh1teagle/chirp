@@ -52,6 +52,7 @@ export type StudioState = {
   languages: string[];
   language: string;
   kokoroVoice: string;
+  kokoroVoiceIds: string[];
   audioPath: string;
   audioAutoplayPending: boolean;
   step: CreateStep;

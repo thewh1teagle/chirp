@@ -1,10 +1,12 @@
 #include "chirp_kokoro.h"
+#include "internal/voice_loader.h"
 
 #include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -162,6 +164,16 @@ void fail(int id, const std::string & error) {
     std::cout << "{\"id\":" << id << ",\"ok\":false,\"error\":\"" << json_escape(error) << "\"}" << std::endl;
 }
 
+std::string json_string_array(const std::vector<std::string> & items) {
+    std::string out = "[";
+    for (size_t i = 0; i < items.size(); ++i) {
+        if (i > 0) out += ",";
+        out += "\"" + json_escape(items[i]) + "\"";
+    }
+    out += "]";
+    return out;
+}
+
 }
 
 int main() {
@@ -180,6 +192,21 @@ int main() {
         }
         if (req.method == "languages") {
             ok(req.id, "\"languages\":[\"auto\",\"en-us\",\"en\",\"es\",\"fr\",\"ja\",\"hi\",\"it\",\"pt-br\"]");
+            continue;
+        }
+        if (req.method == "voices") {
+            std::string path = req.voices_path.empty() ? voices_path : req.voices_path;
+            if (path.empty()) {
+                fail(req.id, "voices_path is required");
+                continue;
+            }
+            std::vector<std::string> voices;
+            std::string error;
+            if (!chirp_kokoro::list_voices_from_archive(path, voices, error)) {
+                fail(req.id, error);
+                continue;
+            }
+            ok(req.id, "\"voices\":" + json_string_array(voices));
             continue;
         }
         if (req.method == "load") {

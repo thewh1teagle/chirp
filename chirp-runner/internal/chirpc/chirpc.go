@@ -114,6 +114,10 @@ func (c *Context) Languages() []Language {
 	return languages
 }
 
+func (c *Context) Voices() []string {
+	return nil
+}
+
 func (c *Context) LanguageID(language string) (int, error) {
 	language = strings.ToLower(strings.TrimSpace(language))
 	if language == "" || language == "auto" {

@@ -61,6 +61,19 @@ func (s *Server) handleLanguages(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (s *Server) handleVoices(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	voices := s.Voices()
+	if voices == nil {
+		writeError(w, http.StatusServiceUnavailable, errNoModel, "no model loaded or voices unavailable")
+		return
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"runtime": "kokoro",
+		"voices":  voices,
+	})
+}
+
 func (s *Server) handleModelLoad(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Runtime   string `json:"runtime,omitempty"`

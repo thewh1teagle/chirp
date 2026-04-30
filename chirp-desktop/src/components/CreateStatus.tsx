@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
-import { CreateStep } from "../types";
+import { CreateStep } from "../lib/types";
 import { Card } from "./ui";
 
 export function CreateStatus({ step, status }: { step: CreateStep; status: string }) {
