@@ -91,12 +91,6 @@ jobs:
           SIGN_ENABLED: ${{ runner.os == 'Windows' && inputs.sign-windows && 'true' || 'false' }}
           SIGN_TUNNEL_URL: ${{ secrets.SIGN_TUNNEL_URL }}
           SIGN_TUNNEL_SECRET: ${{ secrets.SIGN_TUNNEL_SECRET }}
-          APPLE_CERTIFICATE: ${{ runner.os == 'macOS' && inputs.sign-macos && secrets.APPLE_CERTIFICATE || '' }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ runner.os == 'macOS' && inputs.sign-macos && secrets.APPLE_CERTIFICATE_PASSWORD || '' }}
-          APPLE_SIGNING_IDENTITY: ${{ runner.os == 'macOS' && inputs.sign-macos && secrets.APPLE_SIGNING_IDENTITY || '' }}
-          APPLE_ID: ${{ runner.os == 'macOS' && inputs.sign-macos && secrets.APPLE_ID || '' }}
-          APPLE_PASSWORD: ${{ runner.os == 'macOS' && inputs.sign-macos && secrets.APPLE_PASSWORD || '' }}
-          APPLE_TEAM_ID: ${{ runner.os == 'macOS' && inputs.sign-macos && secrets.APPLE_TEAM_ID || '' }}
         with:
           tagName: chirp-desktop-v__VERSION__
           releaseName: chirp desktop v__VERSION__
