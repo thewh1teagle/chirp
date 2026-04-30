@@ -24,6 +24,7 @@ namespace {
 
 constexpr int kSampleRate = 24000;
 constexpr size_t kMaxPhonemeLength = 510;
+constexpr float kInterBatchSilenceSeconds = 0.12f;
 
 void write_u16(std::ofstream & out, uint16_t v) {
     out.put(static_cast<char>(v & 0xff));
@@ -342,6 +343,7 @@ bool KokoroModel::synthesize_to_file(const std::string & text, const std::string
 
     const size_t max_tokens = std::min(kMaxPhonemeLength, impl_->voice.rows > 0 ? impl_->voice.rows - 1 : 0);
     std::vector<float> all_audio;
+    bool wrote_audio = false;
     for (const auto & batch : pack_misaki_sentences(misaki_sentences, max_tokens)) {
         std::vector<int64_t> tokens = tokenize_phonemes(batch);
         if (std::getenv("CHIRP_KOKORO_DEBUG")) {
@@ -353,7 +355,11 @@ bool KokoroModel::synthesize_to_file(const std::string & text, const std::string
         }
         try {
             std::vector<float> audio = impl_->infer(tokens);
+            if (wrote_audio && !audio.empty()) {
+                all_audio.insert(all_audio.end(), static_cast<size_t>(kSampleRate * kInterBatchSilenceSeconds), 0.0f);
+            }
             all_audio.insert(all_audio.end(), audio.begin(), audio.end());
+            wrote_audio = wrote_audio || !audio.empty();
         } catch (const Ort::Exception & e) {
             impl_->error = e.what();
             return false;

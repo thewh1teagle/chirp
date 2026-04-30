@@ -9,6 +9,10 @@ bool is_ascii_space(char c) {
     return c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == '\f' || c == '\v';
 }
 
+bool is_chunk_boundary(char c) {
+    return c == '?' || c == '!' || c == '.' || c == ',';
+}
+
 std::string trim_ascii(const std::string & text) {
     size_t begin = 0;
     while (begin < text.size() && is_ascii_space(text[begin])) {
@@ -44,8 +48,26 @@ std::string normalize_text_utf8(const std::string & text) {
 std::vector<std::string> chunk_text(const std::string & text) {
     std::string normalized = normalize_text_utf8(text);
     std::vector<std::string> chunks;
-    if (!normalized.empty()) {
-        chunks.push_back(normalized);
+    std::string current;
+    current.reserve(normalized.size());
+
+    auto flush = [&]() {
+        std::string chunk = trim_ascii(current);
+        if (!chunk.empty()) {
+            chunks.push_back(std::move(chunk));
+        }
+        current.clear();
+    };
+
+    for (char c : normalized) {
+        current.push_back(c);
+        if (is_chunk_boundary(c)) {
+            flush();
+        }
+    }
+
+    if (!current.empty()) {
+        flush();
     }
     return chunks;
 }

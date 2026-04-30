@@ -6,7 +6,7 @@ on:
       runner_tag:
         description: "Runner release tag to test"
         required: true
-        default: "chirp-runner-v0.2.11"
+        default: "chirp-runner-v0.2.12"
         type: string
       kokoro_bundle_url:
         description: "Kokoro model bundle URL"
