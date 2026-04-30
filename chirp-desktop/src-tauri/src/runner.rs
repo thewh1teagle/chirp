@@ -554,7 +554,12 @@ fn ensure_runner(app: &tauri::AppHandle, state: &State<'_, RunnerState>) -> Resu
         }
         let stderr = process.recent_stderr();
         if !stderr.is_empty() {
-            eprintln!("Chirp runner exited; recent stderr: {stderr}");
+            analytics::track_error(
+                app,
+                analytics::events::ERROR_RUNNER_REQUEST_FAILED,
+                format!("Chirp runner exited; recent stderr: {}", stderr.trim()),
+                serde_json::json!({"operation": "ensure_runner"}),
+            );
         }
         *guard = None;
     }
