@@ -1,52 +1,52 @@
 #!/bin/sh
-set -eu
 
-repo="thewh1teagle/chirp"
-tag="${1:-}"
-install_dir="${CHIRP_INSTALL_DIR:-$HOME/.local/bin}"
-bin_path="$install_dir/chirp.AppImage"
+# Linux installer for Chirp
+# Supports Debian / Ubuntu with DEB packages
+# Accepts tag in the first argument
 
-need() {
-  command -v "$1" >/dev/null 2>&1 || {
-    echo "Missing required command: $1" >&2
+# Usage:
+# ./installer.sh {tag}
+
+# Available at https://thewh1teagle.github.io/chirp/installer.sh
+# Via curl -sSf https://thewh1teagle.github.io/chirp/installer.sh | sh -s {tag}
+
+set -e
+
+TAG=$1
+VERSION=$(echo "$TAG" | sed 's/^chirp-desktop-v//; s/^v//')
+
+if [ -z "$TAG" ]; then
+    echo "Error: No tag specified. Usage: ./installer.sh {tag}"
     exit 1
-  }
-}
-
-need curl
-need grep
-need sed
-
-if [ -z "$tag" ]; then
-  tag="$(
-    curl -fsSL "https://api.github.com/repos/$repo/releases?per_page=50" |
-      grep -o '"tag_name": *"chirp-desktop-v[^"]*"' |
-      sed -E 's/.*"([^"]+)"/\1/' |
-      head -n 1
-  )"
 fi
 
-if [ -z "$tag" ]; then
-  echo "Could not find latest chirp desktop release." >&2
-  exit 1
+ARCH=$(uname -m)
+if [ "$ARCH" != "x86_64" ]; then
+    echo "Error: Unsupported architecture: $ARCH"
+    exit 1
 fi
 
-asset="$(
-  curl -fsSL "https://api.github.com/repos/$repo/releases/tags/$tag" |
-    grep -o '"browser_download_url": *"[^"]*\.AppImage"' |
-    sed -E 's/.*"([^"]+)"/\1/' |
-    head -n 1
-)"
+DEB_ARCH="amd64"
 
-if [ -z "$asset" ]; then
-  echo "Could not find Linux AppImage asset for $tag." >&2
-  exit 1
+DEB_URL="https://github.com/thewh1teagle/chirp/releases/download/${TAG}/chirp_${VERSION}_${DEB_ARCH}.deb"
+
+echo "Downloading Chirp version $TAG for $ARCH..."
+
+TEMP_DIR=$(mktemp -d)
+cd "$TEMP_DIR"
+
+if [ -f /etc/os-release ] && grep -iq "ubuntu\|debian" /etc/os-release; then
+    echo "Detected Debian/Ubuntu. Downloading DEB package..."
+    wget "$DEB_URL" -O chirp.deb
+    sudo apt-get install -y ./chirp.deb
+else
+    echo "Unsupported Linux distribution. Please install the DEB package manually:"
+    echo "$DEB_URL"
+    exit 1
 fi
 
-mkdir -p "$install_dir"
-echo "Downloading Chirp $tag..."
-curl -fL "$asset" -o "$bin_path"
-chmod +x "$bin_path"
+cd ..
+rm -rf "$TEMP_DIR"
 
-echo "Installed Chirp to $bin_path"
-echo "Run it with: $bin_path"
+echo "Chirp installation complete!"
+echo "Run 'chirp' to open it!"
