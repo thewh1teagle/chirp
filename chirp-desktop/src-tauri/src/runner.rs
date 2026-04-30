@@ -9,6 +9,7 @@ use std::{
 };
 use tauri::{Manager, State};
 
+use crate::analytics;
 use crate::model;
 
 pub struct RunnerState {
@@ -215,7 +216,16 @@ pub async fn start_runner(
     app: tauri::AppHandle,
     state: State<'_, RunnerState>,
 ) -> Result<RunnerInfo, String> {
-    ensure_runner(&app, &state).map(|base_url| RunnerInfo { base_url })
+    ensure_runner(&app, &state)
+        .map(|base_url| RunnerInfo { base_url })
+        .map_err(|err| {
+            track_err(
+                &app,
+                analytics::events::ERROR_RUNNER_START_FAILED,
+                err,
+                "start_runner",
+            )
+        })
 }
 
 #[tauri::command]
@@ -265,7 +275,10 @@ pub async fn load_model(
 ) -> Result<serde_json::Value, String> {
     let (client, base_url) = runner_client(&app, &state)?;
     let runtime = request.runtime.unwrap_or_else(|| {
-        if request.voices_path.as_deref().is_some_and(|path| !path.is_empty())
+        if request
+            .voices_path
+            .as_deref()
+            .is_some_and(|path| !path.is_empty())
             || request.codec_path.is_empty()
         {
             "kokoro".to_string()
@@ -309,8 +322,24 @@ pub async fn load_model(
         .json(&body)
         .send()
         .await
-        .map_err(|err| format!("failed to send model load request: {err}"))?;
-    json_response(response).await
+        .map_err(|err| {
+            track_runner_err(
+                &app,
+                analytics::events::ERROR_MODEL_LOAD_FAILED,
+                format!("failed to send model load request: {err}"),
+                "load_model",
+                &runtime,
+            )
+        })?;
+    json_response(response).await.map_err(|err| {
+        track_runner_err(
+            &app,
+            analytics::events::ERROR_MODEL_LOAD_FAILED,
+            err,
+            "load_model",
+            &runtime,
+        )
+    })
 }
 
 #[tauri::command]
@@ -323,14 +352,31 @@ pub async fn get_languages(
         .get(format!("{base_url}/v1/languages"))
         .send()
         .await
-        .map_err(|err| format!("failed to send languages request: {err}"))?;
+        .map_err(|err| {
+            track_err(
+                &app,
+                analytics::events::ERROR_RUNNER_REQUEST_FAILED,
+                format!("failed to send languages request: {err}"),
+                "get_languages",
+            )
+        })?;
     if !response.status().is_success() {
-        return Err(response_error(response).await);
+        let err = response_error(response).await;
+        return Err(track_err(
+            &app,
+            analytics::events::ERROR_RUNNER_REQUEST_FAILED,
+            err,
+            "get_languages",
+        ));
     }
-    let body = response
-        .json::<LanguagesResponse>()
-        .await
-        .map_err(|err| format!("failed to parse languages response: {err}"))?;
+    let body = response.json::<LanguagesResponse>().await.map_err(|err| {
+        track_err(
+            &app,
+            analytics::events::ERROR_RUNNER_REQUEST_FAILED,
+            format!("failed to parse languages response: {err}"),
+            "get_languages",
+        )
+    })?;
     Ok(body.languages)
 }
 
@@ -342,28 +388,59 @@ pub async fn synthesize(
 ) -> Result<String, String> {
     let (client, base_url) = runner_client(&app, &state)?;
     let output_path = request.output_path.unwrap_or_else(default_output_path);
+    let language = request.language.unwrap_or_else(|| "auto".to_string());
+    let voice = request.voice.unwrap_or_default();
+    let has_voice_reference = request
+        .voice_reference
+        .as_deref()
+        .is_some_and(|value| !value.trim().is_empty());
     let body = serde_json::json!({
         "input": request.input,
         "voice_reference": request.voice_reference.unwrap_or_default(),
-        "voice": request.voice.unwrap_or_default(),
+        "voice": voice,
         "response_format": "wav",
-        "language": request.language.unwrap_or_else(|| "auto".to_string()),
+        "language": language,
     });
+    let props = || {
+        serde_json::json!({
+            "operation": "synthesize",
+            "voice": body["voice"].as_str().unwrap_or_default(),
+            "language": body["language"].as_str().unwrap_or("auto"),
+            "has_voice_reference": has_voice_reference,
+        })
+    };
 
     let response = client
         .post(format!("{base_url}/v1/audio/speech"))
         .json(&body)
         .send()
         .await
-        .map_err(|err| format!("failed to send speech request: {err}"))?;
+        .map_err(|err| {
+            analytics::track_error(
+                &app,
+                analytics::events::ERROR_SYNTHESIS_FAILED,
+                format!("failed to send speech request: {err}"),
+                props(),
+            )
+        })?;
     if !response.status().is_success() {
-        return Err(response_error(response).await);
+        let err = response_error(response).await;
+        return Err(analytics::track_error(
+            &app,
+            analytics::events::ERROR_SYNTHESIS_FAILED,
+            err,
+            props(),
+        ));
     }
 
-    let bytes = response
-        .bytes()
-        .await
-        .map_err(|err| format!("failed to read speech response: {err}"))?;
+    let bytes = response.bytes().await.map_err(|err| {
+        analytics::track_error(
+            &app,
+            analytics::events::ERROR_SYNTHESIS_FAILED,
+            format!("failed to read speech response: {err}"),
+            props(),
+        )
+    })?;
     tauri::async_runtime::spawn_blocking({
         let output_path = output_path.clone();
         move || {
@@ -372,33 +449,78 @@ pub async fn synthesize(
         }
     })
     .await
-    .map_err(|err| format!("failed to join file write task: {err}"))??;
+    .map_err(|err| {
+        analytics::track_error(
+            &app,
+            analytics::events::ERROR_SYNTHESIS_FAILED,
+            format!("failed to join file write task: {err}"),
+            props(),
+        )
+    })?
+    .map_err(|err| {
+        analytics::track_error(
+            &app,
+            analytics::events::ERROR_SYNTHESIS_FAILED,
+            err,
+            props(),
+        )
+    })?;
+    analytics::track_event_handle_with_props(
+        &app,
+        analytics::events::SYNTHESIS_COMPLETED,
+        Some(props()),
+    );
     Ok(output_path)
 }
 
 #[tauri::command]
-pub async fn copy_audio_file(source_path: String, destination_path: String) -> Result<(), String> {
+pub async fn copy_audio_file(
+    app: tauri::AppHandle,
+    source_path: String,
+    destination_path: String,
+) -> Result<(), String> {
     if source_path.trim().is_empty() {
-        return Err("source audio path is empty".to_string());
+        let err = "source audio path is empty".to_string();
+        return Err(track_err(
+            &app,
+            analytics::events::ERROR_FILE_OPERATION_FAILED,
+            err,
+            "copy_audio_file",
+        ));
     }
     if destination_path.trim().is_empty() {
-        return Err("destination audio path is empty".to_string());
+        let err = "destination audio path is empty".to_string();
+        return Err(track_err(
+            &app,
+            analytics::events::ERROR_FILE_OPERATION_FAILED,
+            err,
+            "copy_audio_file",
+        ));
     }
 
     let source = PathBuf::from(source_path);
     if !source.is_file() {
-        return Err(format!(
-            "source audio file does not exist: {}",
-            source.display()
+        let err = format!("source audio file does not exist: {}", source.display());
+        return Err(track_err(
+            &app,
+            analytics::events::ERROR_FILE_OPERATION_FAILED,
+            err,
+            "copy_audio_file",
         ));
     }
 
     let destination = PathBuf::from(destination_path);
     if let Some(parent) = destination.parent() {
         tokio::fs::create_dir_all(parent).await.map_err(|err| {
-            format!(
+            let message = format!(
                 "failed to create destination folder {}: {err}",
                 parent.display()
+            );
+            track_err(
+                &app,
+                analytics::events::ERROR_FILE_OPERATION_FAILED,
+                message,
+                "copy_audio_file",
             )
         })?;
     }
@@ -406,10 +528,16 @@ pub async fn copy_audio_file(source_path: String, destination_path: String) -> R
     tokio::fs::copy(&source, &destination)
         .await
         .map_err(|err| {
-            format!(
+            let message = format!(
                 "failed to copy audio from {} to {}: {err}",
                 source.display(),
                 destination.display()
+            );
+            track_err(
+                &app,
+                analytics::events::ERROR_FILE_OPERATION_FAILED,
+                message,
+                "copy_audio_file",
             )
         })?;
     Ok(())
@@ -451,6 +579,30 @@ fn runner_client(
         .as_ref()
         .ok_or_else(|| "runner process missing after start".to_string())?;
     Ok((process.client.clone(), base_url))
+}
+
+fn track_err(app: &tauri::AppHandle, event: &str, error: String, operation: &str) -> String {
+    analytics::track_error(
+        app,
+        event,
+        error,
+        serde_json::json!({"operation": operation}),
+    )
+}
+
+fn track_runner_err(
+    app: &tauri::AppHandle,
+    event: &str,
+    error: String,
+    operation: &str,
+    runtime: &str,
+) -> String {
+    analytics::track_error(
+        app,
+        event,
+        error,
+        serde_json::json!({"operation": operation, "runtime": runtime}),
+    )
 }
 
 fn resolve_runner_binary(app: &tauri::AppHandle) -> Result<PathBuf, String> {

@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use tauri::Manager;
 
+use crate::analytics;
+
 #[derive(Debug, Deserialize)]
 pub struct DownloadVoiceRequest {
     pub id: String,
@@ -15,6 +17,23 @@ pub struct DownloadedVoice {
 
 #[tauri::command]
 pub async fn download_voice(
+    app: tauri::AppHandle,
+    request: DownloadVoiceRequest,
+) -> Result<DownloadedVoice, String> {
+    let voice_id = request.id.clone();
+    download_voice_inner(app.clone(), request)
+        .await
+        .map_err(|err| {
+            analytics::track_error(
+                &app,
+                analytics::events::ERROR_VOICE_DOWNLOAD_FAILED,
+                err,
+                serde_json::json!({"operation": "download_voice", "voice": voice_id}),
+            )
+        })
+}
+
+async fn download_voice_inner(
     app: tauri::AppHandle,
     request: DownloadVoiceRequest,
 ) -> Result<DownloadedVoice, String> {

@@ -5,6 +5,8 @@
 namespace chirp_kokoro {
 namespace {
 
+constexpr size_t kMaxTextChunkChars = 510;
+
 bool is_ascii_space(char c) {
     return c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == '\f' || c == '\v';
 }
@@ -49,25 +51,45 @@ std::vector<std::string> chunk_text(const std::string & text) {
     std::string normalized = normalize_text_utf8(text);
     std::vector<std::string> chunks;
     std::string current;
+    std::string pending;
     current.reserve(normalized.size());
+    pending.reserve(normalized.size());
 
-    auto flush = [&]() {
-        std::string chunk = trim_ascii(current);
+    auto push_chunk = [&](std::string & value) {
+        std::string chunk = trim_ascii(value);
         if (!chunk.empty()) {
             chunks.push_back(std::move(chunk));
         }
-        current.clear();
+        value.clear();
+    };
+
+    auto append_pending = [&]() {
+        std::string clause = trim_ascii(pending);
+        if (clause.empty()) {
+            pending.clear();
+            return;
+        }
+        size_t separator = current.empty() ? 0 : 1;
+        if (!current.empty() && current.size() + separator + clause.size() > kMaxTextChunkChars) {
+            push_chunk(current);
+        }
+        if (!current.empty()) {
+            current.push_back(' ');
+        }
+        current += clause;
+        pending.clear();
     };
 
     for (char c : normalized) {
-        current.push_back(c);
+        pending.push_back(c);
         if (is_chunk_boundary(c)) {
-            flush();
+            append_pending();
         }
     }
 
+    append_pending();
     if (!current.empty()) {
-        flush();
+        push_chunk(current);
     }
     return chunks;
 }

@@ -6,6 +6,9 @@
   "permissions": [
     "core:default",
     "clipboard-manager:allow-write-text",
+    "store:allow-get",
+    "store:allow-get-store",
+    "aptabase:allow-track-event",
     "http:allow-fetch",
     {
       "identifier": "http:default",

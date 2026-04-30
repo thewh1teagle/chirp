@@ -1,0 +1,11 @@
+[workspace]
+members = ["chirp-desktop/src-tauri"]
+resolver = "2"
+
+# https://v1.tauri.app/v1/guides/building/app-size/#rust-build-time-optimizations
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

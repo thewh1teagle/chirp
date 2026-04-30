@@ -9,6 +9,8 @@ use tar::Archive;
 use tauri::{Emitter, Manager};
 use tokio::io::AsyncWriteExt;
 
+use crate::analytics;
+
 const MODELS_TAG: &str = "chirp-models-v0.1.3";
 const MODEL_DIR: &str = "chirp-models-q5_0";
 const MODEL_FILE: &str = "qwen3-tts-model.gguf";
@@ -92,6 +94,22 @@ pub async fn download_model_bundle(
     runtime: Option<String>,
 ) -> Result<ModelBundle, String> {
     let runtime = runtime.unwrap_or_else(|| "qwen".to_string());
+    download_model_bundle_inner(app.clone(), runtime.clone())
+        .await
+        .map_err(|err| {
+            analytics::track_error(
+                &app,
+                analytics::events::ERROR_MODEL_DOWNLOAD_FAILED,
+                err,
+                serde_json::json!({"operation": "download_model_bundle", "runtime": runtime}),
+            )
+        })
+}
+
+async fn download_model_bundle_inner(
+    app: tauri::AppHandle,
+    runtime: String,
+) -> Result<ModelBundle, String> {
     if runtime == "kokoro" {
         return download_kokoro_bundle(app).await;
     }
@@ -215,7 +233,9 @@ fn kokoro_bundle(app: &tauri::AppHandle) -> Result<ModelBundle, String> {
         espeak_data_path: Some(path_string(&espeak_data_path)),
         model_dir: path_string(&dir),
         version: source.version,
-        url: source.archive_url.unwrap_or_else(|| KOKORO_BUNDLE_URL.to_string()),
+        url: source
+            .archive_url
+            .unwrap_or_else(|| KOKORO_BUNDLE_URL.to_string()),
     })
 }
 

@@ -20,11 +20,11 @@ using chirp_kokoro::chunk_text;
 int main() {
     {
         std::vector<std::string> chunks = chunk_text("Hello world!  How are you? Fine, thanks.");
-        assert((chunks == std::vector<std::string>{"Hello world!", "How are you?", "Fine,", "thanks."}));
+        assert((chunks == std::vector<std::string>{"Hello world! How are you? Fine, thanks."}));
     }
     {
         std::vector<std::string> chunks = chunk_text("  Wait...  go  ");
-        assert((chunks == std::vector<std::string>{"Wait.", ".", ".", "go"}));
+        assert((chunks == std::vector<std::string>{"Wait. . . go"}));
     }
     {
         std::vector<std::string> chunks = chunk_text("No punctuation here");
