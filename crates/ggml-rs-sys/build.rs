@@ -56,6 +56,9 @@ fn ggml_source_dir() -> PathBuf {
 fn build_ggml(source_dir: &Path) -> PathBuf {
     let wrapper_dir = cmake_wrapper_dir(source_dir);
     let mut config = cmake::Config::new(&wrapper_dir);
+    if cfg!(target_os = "windows") {
+        config.generator("Ninja");
+    }
     config
         .profile("Release")
         .define("BUILD_SHARED_LIBS", "OFF")
