@@ -90,13 +90,15 @@ jobs:
           }
           echo "VULKAN_SDK=$($sdk.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "$($sdk.FullName)\Bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+          echo "CARGO_TARGET_DIR=D:/t" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Build chirp server
         shell: bash
         run: |
           cargo build -p chirp-server --release --bin chirp-server --target "${{ matrix.target }}"
           mkdir -p "dist/chirp-server-${{ matrix.platform }}"
-          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" "dist/chirp-server-${{ matrix.platform }}/${{ matrix.binary }}"
+          target_dir="${CARGO_TARGET_DIR:-target}"
+          cp "${target_dir}/${{ matrix.target }}/release/${{ matrix.binary }}" "dist/chirp-server-${{ matrix.platform }}/${{ matrix.binary }}"
 
       - name: Package chirp server
         shell: bash
