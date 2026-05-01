@@ -176,7 +176,9 @@ fn metal_enabled() -> &'static str {
 }
 
 fn vulkan_enabled() -> &'static str {
-    if cfg!(feature = "vulkan") || (cfg!(target_os = "linux") && !cfg!(feature = "metal")) {
+    if cfg!(feature = "vulkan")
+        || ((cfg!(target_os = "linux") || cfg!(target_os = "windows")) && !cfg!(feature = "metal"))
+    {
         "ON"
     } else {
         "OFF"
