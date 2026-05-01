@@ -95,7 +95,8 @@ fn normalize_text_utf8(text: &str) -> String {
 }
 
 fn trim_ascii(text: &str) -> String {
-    text.trim_matches(|ch: char| ch.is_ascii_whitespace()).to_string()
+    text.trim_matches(|ch: char| ch.is_ascii_whitespace())
+        .to_string()
 }
 
 fn is_chunk_boundary(ch: char) -> bool {

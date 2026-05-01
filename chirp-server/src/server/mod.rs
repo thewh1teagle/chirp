@@ -1,7 +1,7 @@
 use anyhow::Result;
 use axum::{
-    routing::{get, post},
     Router,
+    routing::{get, post},
 };
 use tokio::net::TcpListener;
 

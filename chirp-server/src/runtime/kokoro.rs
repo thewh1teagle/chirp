@@ -1,11 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Result};
-use kokoro_rs::{
-    list_voices, write_mono_i16_wav, Kokoro, KokoroConfig, SynthesizeRequest,
-};
+use anyhow::{Result, bail};
+use kokoro_rs::{Kokoro, KokoroConfig, SynthesizeRequest, list_voices, write_mono_i16_wav};
 
-use super::{language_code_alias, Language, Runtime};
+use super::{Language, Runtime, language_code_alias};
 
 const KOKORO_LANGUAGES: &[&str] = &["en-us", "en", "es", "fr", "ja", "hi", "it", "pt-br"];
 

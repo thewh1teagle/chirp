@@ -1,8 +1,8 @@
 use axum::{
+    Json,
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 
 use crate::runtime::language_display_name;
@@ -45,7 +45,11 @@ pub async fn models(State(server): State<SharedServer>) -> impl IntoResponse {
 pub async fn languages(State(server): State<SharedServer>) -> Response {
     let inner = server.inner.lock().await;
     let Some(ctx) = inner.ctx.as_ref() else {
-        return write_error(StatusCode::SERVICE_UNAVAILABLE, "no_model", "no model loaded");
+        return write_error(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "no_model",
+            "no model loaded",
+        );
     };
     let items = ctx.languages().to_vec();
     let languages = std::iter::once("auto".to_string())

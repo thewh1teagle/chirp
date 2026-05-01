@@ -1,9 +1,6 @@
-use std::{
-    path::PathBuf,
-    sync::Arc,
-};
+use std::{path::PathBuf, sync::Arc};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use tokio::sync::Mutex;
 
 use crate::runtime::{KokoroRuntime, QwenRuntime, Runtime, RuntimeParams};

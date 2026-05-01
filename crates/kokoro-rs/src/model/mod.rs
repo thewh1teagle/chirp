@@ -91,7 +91,11 @@ impl Kokoro {
             session,
             voice,
             language: config.language,
-            speed: if config.speed > 0.0 { config.speed } else { 1.0 },
+            speed: if config.speed > 0.0 {
+                config.speed
+            } else {
+                1.0
+            },
         })
     }
 
@@ -141,7 +145,10 @@ impl Kokoro {
         tokens.extend_from_slice(phoneme_tokens);
         tokens.push(0);
 
-        let style = self.voice.style_for_token_count(phoneme_tokens.len()).to_vec();
+        let style = self
+            .voice
+            .style_for_token_count(phoneme_tokens.len())
+            .to_vec();
         let outputs = self.session.run(ort::inputs! {
             "tokens" => Tensor::<i64>::from_array(([1, tokens.len()], tokens))?,
             "style" => Tensor::<f32>::from_array(([1, self.voice.dims], style))?,

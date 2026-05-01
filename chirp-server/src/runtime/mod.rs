@@ -7,8 +7,8 @@ use utoipa::ToSchema;
 mod kokoro;
 mod qwen;
 
-pub use kokoro::{kokoro_language, KokoroRuntime};
-pub use qwen::{qwen_language_id, QwenRuntime};
+pub use kokoro::{KokoroRuntime, kokoro_language};
+pub use qwen::{QwenRuntime, qwen_language_id};
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
 pub struct Language {

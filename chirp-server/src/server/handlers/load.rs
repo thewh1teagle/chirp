@@ -1,13 +1,13 @@
 use std::path::PathBuf;
 
 use axum::{
+    Json,
     extract::State,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 
-use crate::runtime::{kokoro_language, RuntimeParams};
+use crate::runtime::{RuntimeParams, kokoro_language};
 
 use super::super::{
     dto::{LoadBody, LoadResponse},
@@ -22,14 +22,23 @@ use super::super::{
     request_body = LoadBody,
     responses((status = 200, body = LoadResponse), (status = 400), (status = 500))
 )]
-pub async fn model_load(State(server): State<SharedServer>, body: Option<Json<LoadBody>>) -> Response {
+pub async fn model_load(
+    State(server): State<SharedServer>,
+    body: Option<Json<LoadBody>>,
+) -> Response {
     let mut body = body.map(|Json(body)| body).unwrap_or_default();
     set_default_runtime(&mut body);
 
     let params = match body.runtime.as_str() {
         "qwen" => qwen_load_params(body),
         "kokoro" => kokoro_load_params(body),
-        _ => return write_error(StatusCode::BAD_REQUEST, "invalid_request", "unsupported runtime"),
+        _ => {
+            return write_error(
+                StatusCode::BAD_REQUEST,
+                "invalid_request",
+                "unsupported runtime",
+            );
+        }
     };
     let params = match params {
         Ok(params) => params,

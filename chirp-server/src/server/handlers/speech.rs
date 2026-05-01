@@ -1,9 +1,9 @@
 use axum::{
+    Json,
     body::Bytes,
     extract::State,
-    http::{header, HeaderValue, StatusCode},
+    http::{HeaderValue, StatusCode, header},
     response::{IntoResponse, Response},
-    Json,
 };
 
 use super::super::{
@@ -52,12 +52,20 @@ pub async fn speech(State(server): State<SharedServer>, Json(body): Json<SpeechB
     {
         let mut inner = server.inner.lock().await;
         let Some(ctx) = inner.ctx.as_mut() else {
-            return write_error(StatusCode::SERVICE_UNAVAILABLE, "no_model", "no model loaded");
+            return write_error(
+                StatusCode::SERVICE_UNAVAILABLE,
+                "no_model",
+                "no model loaded",
+            );
         };
         if let Err(err) =
             ctx.synthesize_to_file(&body.input, path_option(&voice), &out_path, &body.language)
         {
-            return write_error(StatusCode::INTERNAL_SERVER_ERROR, "internal_error", err.to_string());
+            return write_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_error",
+                err.to_string(),
+            );
         }
     }
 

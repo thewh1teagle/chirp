@@ -1,11 +1,11 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use qwentts_rs::{
-    ar::ArConfig, audio::wav::write_mono_i16_wav, QwenTts, QwenTtsConfig, SynthesizeRequest,
+    QwenTts, QwenTtsConfig, SynthesizeRequest, ar::ArConfig, audio::wav::write_mono_i16_wav,
 };
 
-use super::{language_code_alias, Language, Runtime};
+use super::{Language, Runtime, language_code_alias};
 
 pub struct QwenRuntime {
     tts: QwenTts,

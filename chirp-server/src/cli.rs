@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use clap::{ArgAction, Parser, Subcommand};
 
 use crate::{
     parent::watch_parent,
-    runtime::{qwen_language_id, QwenRuntime, Runtime, RuntimeParams},
-    server::{listen_and_serve, LoadParams, Server},
+    runtime::{QwenRuntime, Runtime, RuntimeParams, qwen_language_id},
+    server::{LoadParams, Server, listen_and_serve},
 };
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -122,7 +122,12 @@ pub async fn run() -> Result<()> {
         } => {
             let mut runtime = QwenRuntime::load(model, codec, max_tokens, temperature, top_k)?;
             qwen_language_id(runtime.languages(), &language)?;
-            runtime.synthesize_to_file(&text, reference.or(ref_wav).as_deref(), &output, &language)?;
+            runtime.synthesize_to_file(
+                &text,
+                reference.or(ref_wav).as_deref(),
+                &output,
+                &language,
+            )?;
             println!("{}", serde_json::json!({ "output": output }));
             Ok(())
         }

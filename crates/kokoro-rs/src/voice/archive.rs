@@ -14,8 +14,8 @@ pub fn load_voice(path: impl AsRef<Path>, voice: &str) -> Result<VoiceData> {
     } else {
         format!("{voice}.npy")
     };
-    let bytes = read_zip_entry(path.as_ref(), &entry)?
-        .ok_or_else(|| Error::MissingVoice(entry.clone()))?;
+    let bytes =
+        read_zip_entry(path.as_ref(), &entry)?.ok_or_else(|| Error::MissingVoice(entry.clone()))?;
     parse_voice_npy(&bytes, voice)
 }
 
@@ -46,11 +46,10 @@ fn read_zip_entry(path: &Path, entry: &str) -> Result<Option<Vec<u8>>> {
 }
 
 fn parse_voice_npy(bytes: &[u8], voice: &str) -> Result<VoiceData> {
-    let npy = NpyFile::new(Cursor::new(bytes))
-        .map_err(|err| Error::InvalidVoice {
-            voice: voice.into(),
-            reason: err.to_string(),
-        })?;
+    let npy = NpyFile::new(Cursor::new(bytes)).map_err(|err| Error::InvalidVoice {
+        voice: voice.into(),
+        reason: err.to_string(),
+    })?;
     if npy.order() == Order::Fortran {
         return Err(Error::InvalidVoice {
             voice: voice.into(),
@@ -74,16 +73,17 @@ fn parse_voice_npy(bytes: &[u8], voice: &str) -> Result<VoiceData> {
             reason: "empty voice array".into(),
         });
     }
-    let values = npy
-        .into_vec::<f32>()
-        .map_err(|err| Error::InvalidVoice {
-            voice: voice.into(),
-            reason: err.to_string(),
-        })?;
+    let values = npy.into_vec::<f32>().map_err(|err| Error::InvalidVoice {
+        voice: voice.into(),
+        reason: err.to_string(),
+    })?;
     if values.len() != rows * dims {
         return Err(Error::InvalidVoice {
             voice: voice.into(),
-            reason: format!("data length {} does not match shape {shape:?}", values.len()),
+            reason: format!(
+                "data length {} does not match shape {shape:?}",
+                values.len()
+            ),
         });
     }
     Ok(VoiceData { rows, dims, values })
