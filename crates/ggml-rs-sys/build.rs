@@ -179,6 +179,12 @@ fn link_platform_libs() {
         println!("cargo:rustc-link-lib=dylib=m");
         println!("cargo:rustc-link-lib=dylib=dl");
     } else if cfg!(target_os = "windows") && vulkan_enabled() == "ON" {
+        if let Some(sdk) = env::var_os("VULKAN_SDK").map(PathBuf::from) {
+            println!(
+                "cargo:rustc-link-search=native={}",
+                sdk.join("Lib").display()
+            );
+        }
         println!("cargo:rustc-link-lib=vulkan-1");
     }
 }
