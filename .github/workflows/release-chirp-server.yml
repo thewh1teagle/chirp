@@ -79,7 +79,10 @@ jobs:
         shell: pwsh
         run: |
           choco install vulkan-sdk -y --no-progress
-          $sdk = Get-ChildItem "${env:ProgramFiles}\VulkanSDK" -Directory |
+          $roots = @("${env:ProgramFiles}\VulkanSDK", "C:\VulkanSDK")
+          $sdk = $roots |
+            Where-Object { Test-Path $_ } |
+            ForEach-Object { Get-ChildItem $_ -Directory } |
             Sort-Object Name -Descending |
             Select-Object -First 1
           if (-not $sdk) {

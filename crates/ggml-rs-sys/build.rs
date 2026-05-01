@@ -170,6 +170,7 @@ fn link_platform_libs() {
             println!("cargo:rustc-link-lib=vulkan");
         }
         println!("cargo:rustc-link-lib=dylib=stdc++");
+        println!("cargo:rustc-link-lib=dylib=gomp");
         println!("cargo:rustc-link-lib=dylib=pthread");
         println!("cargo:rustc-link-lib=dylib=m");
         println!("cargo:rustc-link-lib=dylib=dl");
