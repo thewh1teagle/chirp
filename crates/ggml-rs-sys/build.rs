@@ -75,11 +75,12 @@ fn cmake_wrapper_dir(source_dir: &Path) -> PathBuf {
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     let wrapper_dir = out_dir.join("ggml-cmake-wrapper");
     std::fs::create_dir_all(&wrapper_dir).expect("failed to create ggml CMake wrapper directory");
+    let source_dir = source_dir.display().to_string().replace('\\', "/");
     let cmake = format!(
         "cmake_minimum_required(VERSION 3.20)\n\
          project(ggml_rs_sys LANGUAGES C CXX ASM)\n\
          add_subdirectory({} ${{CMAKE_BINARY_DIR}}/ggml)\n",
-        source_dir.display()
+        source_dir
     );
     std::fs::write(wrapper_dir.join("CMakeLists.txt"), cmake)
         .expect("failed to write ggml CMake wrapper");
