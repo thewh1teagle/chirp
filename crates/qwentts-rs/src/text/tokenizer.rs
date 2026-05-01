@@ -45,8 +45,17 @@ impl QwenTokenizer {
     pub fn encode_tts_text(&self, text: &str) -> Result<TokenizedText> {
         self.encode(&tts_prompt(text))
     }
+
+    pub fn encode_instruct_text(&self, instruct: &str) -> Result<TokenizedText> {
+        self.encode(&instruct_prompt(instruct))
+    }
 }
 
 pub fn tts_prompt(text: &str) -> String {
     format!("<|im_start|>assistant\n{text}<|im_end|>\n<|im_start|>assistant\n")
+}
+
+pub fn instruct_prompt(instruct: &str) -> String {
+    // VoiceDesign uses the same separate user turn as the upstream Python wrapper.
+    format!("<|im_start|>user\n{instruct}<|im_end|>\n")
 }

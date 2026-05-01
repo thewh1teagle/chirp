@@ -66,6 +66,7 @@ impl GgmlWeights {
     pub fn generate_codes(
         &mut self,
         text_tokens: &[i32],
+        instruct_tokens: Option<&[i32]>,
         speaker: Option<&[f32]>,
         max_len: usize,
         options: GenerateOptions,
@@ -74,8 +75,13 @@ impl GgmlWeights {
         if max_len == 0 {
             return Ok(Vec::new());
         }
-        let prefill =
-            self.build_qwen_prefill_embeddings(text_tokens, speaker, options.language_id, cfg)?;
+        let prefill = self.build_qwen_prefill_embeddings(
+            text_tokens,
+            instruct_tokens,
+            speaker,
+            options.language_id,
+            cfg,
+        )?;
         self.init_kv_cache(
             cfg.n_layers as usize,
             prefill.prefill_len + max_len + 8,
@@ -155,7 +161,8 @@ impl GgmlWeights {
         max_len: usize,
         cfg: &crate::ar::ArConfig,
     ) -> Result<Vec<i32>> {
-        let prefill = self.build_qwen_prefill_embeddings(text_tokens, Some(speaker), None, cfg)?;
+        let prefill =
+            self.build_qwen_prefill_embeddings(text_tokens, None, Some(speaker), None, cfg)?;
         self.init_kv_cache(
             cfg.n_layers as usize,
             prefill.prefill_len + max_len + 8,

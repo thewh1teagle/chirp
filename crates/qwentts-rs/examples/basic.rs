@@ -39,8 +39,11 @@ fn main() -> Result<()> {
     config.temperature = args.temperature;
     config.top_k = args.top_k;
 
-    let mut request = SynthesizeRequest::new(args.text);
-    request.ref_wav_path = args.ref_wav;
+    let request = if let Some(ref_wav) = args.ref_wav {
+        SynthesizeRequest::voice_clone(args.text, ref_wav)
+    } else {
+        SynthesizeRequest::new(args.text)
+    };
 
     let mut tts = QwenTts::load(config)?;
     let audio = tts.synthesize(request)?;

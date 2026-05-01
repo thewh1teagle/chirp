@@ -4,8 +4,8 @@ impl GgmlWeights {
             self.backend,
             cfg.code_pred_layers as usize,
             16,
-            cfg.head_dim as usize,
-            cfg.n_key_value_heads as usize,
+            cfg.code_pred_head_dim as usize,
+            cfg.code_pred_key_value_heads as usize,
         )?);
         Ok(())
     }
@@ -40,6 +40,7 @@ impl GgmlWeights {
         cfg: &crate::ar::ArConfig,
     ) -> Result<Vec<f32>> {
         let h = cfg.hidden_size as usize;
+        let cp_h = cfg.code_pred_hidden_size as usize;
         let n_tokens = if cb0_embd.is_some() { 2usize } else { 1usize };
         let code_kv = self
             .code_kv
@@ -83,11 +84,16 @@ impl GgmlWeights {
                 cur = ffi::ggml_get_rows(ctx0, self.tensor(&name)?, inp_code);
                 cur = ffi::ggml_reshape_2d(ctx0, cur, h as i64, 1);
             }
+            if self.tensors.contains_key("code_pred.input_proj.weight") {
+                // 1.7B checkpoints use a narrower code predictor behind this projection.
+                cur = ffi::ggml_mul_mat(ctx0, self.tensor("code_pred.input_proj.weight")?, cur);
+                cur = ffi::ggml_add(ctx0, cur, self.tensor("code_pred.input_proj.bias")?);
+            }
             let mut inp_l = cur;
-            let head_dim = cfg.head_dim as i64;
-            let n_head = cfg.n_attention_heads as i64;
-            let n_kv_head = cfg.n_key_value_heads as i64;
-            let kq_scale = 1.0f32 / (cfg.head_dim as f32).sqrt();
+            let head_dim = cfg.code_pred_head_dim as i64;
+            let n_head = cfg.code_pred_attention_heads as i64;
+            let n_kv_head = cfg.code_pred_key_value_heads as i64;
+            let kq_scale = 1.0f32 / (cfg.code_pred_head_dim as f32).sqrt();
             for il in 0..cfg.code_pred_layers as usize {
                 let prefix = format!("code_pred.blk.{il}.");
                 cur = ffi::ggml_rms_norm(ctx0, inp_l, cfg.rms_norm_eps);
@@ -130,7 +136,7 @@ impl GgmlWeights {
                     q,
                     inp_pos,
                     ptr::null_mut(),
-                    cfg.head_dim as i32,
+                    cfg.code_pred_head_dim as i32,
                     ffi::GGML_ROPE_TYPE_NEOX as i32,
                     0,
                     cfg.rope_theta,
@@ -145,7 +151,7 @@ impl GgmlWeights {
                     k,
                     inp_pos,
                     ptr::null_mut(),
-                    cfg.head_dim as i32,
+                    cfg.code_pred_head_dim as i32,
                     ffi::GGML_ROPE_TYPE_NEOX as i32,
                     0,
                     cfg.rope_theta,
@@ -249,10 +255,10 @@ impl GgmlWeights {
                 cur = ffi::ggml_view_2d(
                     ctx0,
                     cur,
-                    h as i64,
+                    cp_h as i64,
                     1,
                     (*cur).nb[1],
-                    h * std::mem::size_of::<f32>(),
+                    cp_h * std::mem::size_of::<f32>(),
                 );
             }
             let head_name = format!("code_pred.lm_head.{generation_step}.weight");
