@@ -115,9 +115,11 @@ fn kokoro_load_params(body: LoadBody) -> Result<LoadParams, &'static str> {
         return Err("kokoro runtime requires model_path and voices_path");
     }
     if !body.kokoro.espeak_data_path.is_empty() {
-        let espeak_data_path = espeak_data_parent(body.kokoro.espeak_data_path);
         unsafe {
-            std::env::set_var("PIPER_ESPEAKNG_DATA_DIRECTORY", espeak_data_path);
+            std::env::set_var(
+                "PIPER_ESPEAKNG_DATA_DIRECTORY",
+                body.kokoro.espeak_data_path,
+            );
         }
     }
     Ok(LoadParams {
@@ -137,17 +139,4 @@ fn kokoro_load_params(body: LoadBody) -> Result<LoadParams, &'static str> {
             speed: body.kokoro.speed,
         }),
     })
-}
-
-fn espeak_data_parent(path: String) -> String {
-    let path = PathBuf::from(path);
-    if path
-        .file_name()
-        .is_some_and(|name| name == "espeak-ng-data")
-    {
-        if let Some(parent) = path.parent() {
-            return parent.display().to_string();
-        }
-    }
-    path.display().to_string()
 }

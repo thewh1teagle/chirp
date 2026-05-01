@@ -61,7 +61,7 @@ fn locate_espeak_data() -> Option<PathBuf> {
             .is_some_and(|name| name == ESPEAKNG_DATA_DIR_NAME)
             && p.exists()
         {
-            return p.parent().map(PathBuf::from);
+            return Some(p);
         }
     }
     // 2. Current working directory
