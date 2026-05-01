@@ -108,6 +108,73 @@ impl ArConfig {
                 ],
                 5,
             )?,
+            // 0.6B Base uses the talker dimensions here. 1.7B VoiceDesign stores
+            // separate code-predictor dimensions because it has an input projection.
+            code_pred_hidden_size: model.get_u32_any(
+                &[
+                    "qwen3-tts.code_pred.embedding_length",
+                    "qwen3-tts.code_predictor.embedding_length",
+                ],
+                model.get_u32_any(
+                    &[
+                        "qwen3-tts.talker.embedding_length",
+                        "qwen3-tts.embedding_length",
+                    ],
+                    1024,
+                )?,
+            )?,
+            code_pred_intermediate_size: model.get_u32_any(
+                &[
+                    "qwen3-tts.code_pred.feed_forward_length",
+                    "qwen3-tts.code_predictor.feed_forward_length",
+                ],
+                model.get_u32_any(
+                    &[
+                        "qwen3-tts.talker.feed_forward_length",
+                        "qwen3-tts.feed_forward_length",
+                    ],
+                    3072,
+                )?,
+            )?,
+            code_pred_attention_heads: model.get_u32_any(
+                &[
+                    "qwen3-tts.code_pred.attention.head_count",
+                    "qwen3-tts.code_predictor.attention.head_count",
+                ],
+                model.get_u32_any(
+                    &[
+                        "qwen3-tts.talker.attention.head_count",
+                        "qwen3-tts.attention.head_count",
+                    ],
+                    16,
+                )?,
+            )?,
+            code_pred_key_value_heads: model.get_u32_any(
+                &[
+                    "qwen3-tts.code_pred.attention.head_count_kv",
+                    "qwen3-tts.code_predictor.attention.head_count_kv",
+                ],
+                model.get_u32_any(
+                    &[
+                        "qwen3-tts.talker.attention.head_count_kv",
+                        "qwen3-tts.attention.head_count_kv",
+                    ],
+                    8,
+                )?,
+            )?,
+            code_pred_head_dim: model.get_u32_any(
+                &[
+                    "qwen3-tts.code_pred.attention.key_length",
+                    "qwen3-tts.code_predictor.attention.key_length",
+                ],
+                model.get_u32_any(
+                    &[
+                        "qwen3-tts.talker.attention.key_length",
+                        "qwen3-tts.attention.key_length",
+                    ],
+                    128,
+                )?,
+            )?,
             code_pred_vocab_size: model.get_u32_any(
                 &[
                     "qwen3-tts.code_pred.vocab_size",

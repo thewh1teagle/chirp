@@ -2,6 +2,7 @@ impl GgmlWeights {
     pub fn build_qwen_prefill_embeddings(
         &mut self,
         text_tokens: &[i32],
+        instruct_tokens: Option<&[i32]>,
         speaker: Option<&[f32]>,
         language_id: Option<i32>,
         cfg: &crate::ar::ArConfig,
@@ -80,10 +81,28 @@ impl GgmlWeights {
             first_text_plus_codec_bos[i] = first_text[i] + codec_bos[i];
         }
 
-        let prefill_len = 3 + codec_plus_overlay_len + 1;
+        // VoiceDesign prepends the upstream user instruction turn before the
+        // assistant TTS turn. Clone/plain synthesis leave this empty.
+        let instruct_embed = if let Some(tokens) = instruct_tokens {
+            if tokens.is_empty() {
+                Vec::new()
+            } else {
+                self.project_text_tokens(tokens, h)?
+            }
+        } else {
+            Vec::new()
+        };
+
+        let prefill_len = instruct_embed.len() / h + 3 + codec_plus_overlay_len + 1;
         let mut prefill = vec![0.0f32; prefill_len * h];
-        prefill[..role_embed.len()].copy_from_slice(&role_embed);
-        prefill[3 * h..3 * h + codec_plus_overlay.len()].copy_from_slice(&codec_plus_overlay);
+        let mut offset = 0;
+        if !instruct_embed.is_empty() {
+            prefill[..instruct_embed.len()].copy_from_slice(&instruct_embed);
+            offset += instruct_embed.len();
+        }
+        prefill[offset..offset + role_embed.len()].copy_from_slice(&role_embed);
+        offset += role_embed.len();
+        prefill[offset..offset + codec_plus_overlay.len()].copy_from_slice(&codec_plus_overlay);
         prefill[(prefill_len - 1) * h..prefill_len * h].copy_from_slice(&first_text_plus_codec_bos);
 
         let trailing_token_count = text_tokens.len().saturating_sub(9);

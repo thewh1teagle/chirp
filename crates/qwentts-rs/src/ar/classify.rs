@@ -5,12 +5,18 @@ use super::{ArConfig, ArTensorRole, LayerTensorKind, MappedTensor};
 
 pub(super) fn classify_ar_tensor(name: &str, cfg: &ArConfig) -> Option<(ArTensorRole, Vec<usize>)> {
     let h = cfg.hidden_size as usize;
+    let cp_h = cfg.code_pred_hidden_size as usize;
     let text_dim = cfg.text_embd_dim as usize;
     let text_vocab = cfg.text_vocab_size as usize;
     let codec_vocab = cfg.codec_vocab_size as usize;
     let q_dim = (cfg.n_attention_heads * cfg.head_dim) as usize;
     let kv_dim = (cfg.n_key_value_heads * cfg.head_dim) as usize;
     let ffn = cfg.intermediate_size as usize;
+    // The code predictor usually matches the talker, but 1.7B VoiceDesign has
+    // its own narrower transformer behind code_pred.input_proj.
+    let cp_q_dim = (cfg.code_pred_attention_heads * cfg.code_pred_head_dim) as usize;
+    let cp_kv_dim = (cfg.code_pred_key_value_heads * cfg.code_pred_head_dim) as usize;
+    let cp_ffn = cfg.code_pred_intermediate_size as usize;
 
     Some(match name {
         "talker.text_embd.weight" => (ArTensorRole::TextEmbedding, vec![text_dim, text_vocab]),
@@ -23,15 +29,24 @@ pub(super) fn classify_ar_tensor(name: &str, cfg: &ArConfig) -> Option<(ArTensor
         "talker.codec_embd.weight" => (ArTensorRole::CodecEmbedding, vec![h, codec_vocab]),
         "talker.codec_head.weight" => (ArTensorRole::CodecHead, vec![h, codec_vocab]),
         "talker.output_norm.weight" => (ArTensorRole::OutputNorm, vec![h]),
-        "code_pred.output_norm.weight" => (ArTensorRole::CodePredOutputNorm, vec![h]),
+        "code_pred.output_norm.weight" => (ArTensorRole::CodePredOutputNorm, vec![cp_h]),
+        "code_pred.input_proj.weight" => (ArTensorRole::CodePredInputProjWeight, vec![h, cp_h]),
+        "code_pred.input_proj.bias" => (ArTensorRole::CodePredInputProjBias, vec![cp_h]),
         _ => {
             if let Some((layer, suffix)) = parse_indexed_suffix(name, "talker.blk.") {
                 return layer_kind(suffix, h, q_dim, kv_dim, ffn, cfg.head_dim as usize)
                     .map(|(kind, shape)| (ArTensorRole::TalkerLayer { layer, kind }, shape));
             }
             if let Some((layer, suffix)) = parse_indexed_suffix(name, "code_pred.blk.") {
-                return layer_kind(suffix, h, q_dim, kv_dim, ffn, cfg.head_dim as usize)
-                    .map(|(kind, shape)| (ArTensorRole::CodePredLayer { layer, kind }, shape));
+                return layer_kind(
+                    suffix,
+                    cp_h,
+                    cp_q_dim,
+                    cp_kv_dim,
+                    cp_ffn,
+                    cfg.code_pred_head_dim as usize,
+                )
+                .map(|(kind, shape)| (ArTensorRole::CodePredLayer { layer, kind }, shape));
             }
             if let Some(cb) = parse_indexed_terminal(name, "code_pred.codec_embd.", ".weight") {
                 return Some((
@@ -42,7 +57,7 @@ pub(super) fn classify_ar_tensor(name: &str, cfg: &ArConfig) -> Option<(ArTensor
             if let Some(cb) = parse_indexed_terminal(name, "code_pred.lm_head.", ".weight") {
                 return Some((
                     ArTensorRole::CodePredHead { codebook: cb },
-                    vec![h, cfg.code_pred_vocab_size as usize],
+                    vec![cp_h, cfg.code_pred_vocab_size as usize],
                 ));
             }
             return None;
