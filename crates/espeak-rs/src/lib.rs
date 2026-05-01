@@ -57,6 +57,12 @@ fn locate_espeak_data() -> Option<PathBuf> {
         if p.join(ESPEAKNG_DATA_DIR_NAME).exists() {
             return Some(p);
         }
+        if p.file_name()
+            .is_some_and(|name| name == ESPEAKNG_DATA_DIR_NAME)
+            && p.exists()
+        {
+            return p.parent().map(PathBuf::from);
+        }
     }
     // 2. Current working directory
     if let Ok(cwd) = env::current_dir() {
