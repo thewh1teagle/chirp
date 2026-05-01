@@ -48,6 +48,12 @@ impl QwenTtsConfig {
 pub struct QwenTts {
     model: GgufModel,
     codec: Option<GgufModel>,
+    tokenizer: QwenTokenizer,
+    ar_map: ArTensorMap,
+    ar_weights: GgmlWeights,
+    speaker_encoder: SpeakerEncoder,
+    codec_map: CodecTensorMap,
+    codec_weights: GgmlWeights,
     config: QwenTtsConfig,
 }
 
@@ -82,9 +88,22 @@ impl QwenTts {
             .as_ref()
             .map(GgufModel::open)
             .transpose()?;
+        let codec_model = codec.as_ref().ok_or(Error::MissingCodec)?;
+        let tokenizer = QwenTokenizer::from_gguf(&model)?;
+        let ar_map = ArTensorMap::load(&model)?;
+        let ar_weights = GgmlWeights::load_ar(&model, &ar_map)?;
+        let speaker_encoder = SpeakerEncoder::load(&model)?;
+        let codec_map = CodecTensorMap::load(codec_model)?;
+        let codec_weights = GgmlWeights::load_codec(codec_model, &codec_map)?;
         Ok(Self {
             model,
             codec,
+            tokenizer,
+            ar_map,
+            ar_weights,
+            speaker_encoder,
+            codec_map,
+            codec_weights,
             config,
         })
     }
@@ -106,24 +125,21 @@ impl QwenTts {
     }
 
     pub fn synthesize(&mut self, request: SynthesizeRequest) -> Result<AudioSamples> {
-        let codec = self.codec.as_ref().ok_or(Error::MissingCodec)?;
-        let tokenizer = QwenTokenizer::from_gguf(&self.model)?;
-        let token_ids = tokenizer
+        let token_ids = self
+            .tokenizer
             .encode_tts_text(&request.text)?
             .ids
             .into_iter()
             .map(|id| id as i32)
             .collect::<Vec<_>>();
 
-        let ar_map = ArTensorMap::load(&self.model)?;
-        let mut ar_weights = GgmlWeights::load_ar(&self.model, &ar_map)?;
         let speaker = if let Some(path) = request.ref_wav_path {
-            SpeakerEncoder::load(&self.model)?.extract(path)?
+            self.speaker_encoder.extract(path)?
         } else {
-            vec![0.0; ar_map.config.hidden_size as usize]
+            vec![0.0; self.ar_map.config.hidden_size as usize]
         };
         let max_tokens = self.config.max_tokens.max(0) as usize;
-        let codes = ar_weights.generate_codes(
+        let codes = self.ar_weights.generate_codes(
             &token_ids,
             Some(&speaker),
             max_tokens,
@@ -133,19 +149,18 @@ impl QwenTts {
                 temperature: self.config.temperature,
                 top_k: self.config.top_k,
             },
-            &ar_map.config,
+            &self.ar_map.config,
         )?;
 
-        let codec_map = CodecTensorMap::load(codec)?;
-        let mut codec_weights = GgmlWeights::load_codec(codec, &codec_map)?;
-        let n_frames = codes.len() / codec_map.config.n_codebooks as usize;
+        let n_frames = codes.len() / self.codec_map.config.n_codebooks as usize;
         let samples = if n_frames == 0 {
             Vec::new()
         } else {
-            codec_weights.decode_codec_codes(&codes, n_frames, &codec_map.config)?
+            self.codec_weights
+                .decode_codec_codes(&codes, n_frames, &self.codec_map.config)?
         };
         Ok(AudioSamples {
-            sample_rate: codec_map.config.sample_rate,
+            sample_rate: self.codec_map.config.sample_rate,
             samples,
         })
     }

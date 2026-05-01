@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Result, bail};
@@ -15,6 +16,7 @@ pub struct KokoroRuntime {
     speed: f32,
     voices: Vec<String>,
     languages: Vec<Language>,
+    loaded: HashMap<KokoroKey, Kokoro>,
 }
 
 impl KokoroRuntime {
@@ -41,6 +43,7 @@ impl KokoroRuntime {
                     id: id as i32,
                 })
                 .collect(),
+            loaded: HashMap::new(),
         })
     }
 }
@@ -69,15 +72,23 @@ impl Runtime for KokoroRuntime {
             .filter(|value| !value.is_empty())
             .map(str::to_string)
             .unwrap_or_else(|| self.default_voice.clone());
-        let config = KokoroConfig::new(&self.model_path, &self.voices_path)
-            .voice(voice)
-            .language(if language.trim().is_empty() {
-                self.default_language.clone()
-            } else {
-                kokoro_language(language)
-            })
-            .speed(self.speed);
-        let mut kokoro = Kokoro::load(config)?;
+        let language = if language.trim().is_empty() {
+            self.default_language.clone()
+        } else {
+            kokoro_language(language)
+        };
+        let key = KokoroKey { voice, language };
+        if !self.loaded.contains_key(&key) {
+            let config = KokoroConfig::new(&self.model_path, &self.voices_path)
+                .voice(&key.voice)
+                .language(&key.language)
+                .speed(self.speed);
+            self.loaded.insert(key.clone(), Kokoro::load(config)?);
+        }
+        let kokoro = self
+            .loaded
+            .get_mut(&key)
+            .ok_or_else(|| anyhow::anyhow!("failed to load Kokoro runtime"))?;
         let audio = kokoro.synthesize(SynthesizeRequest::new(text))?;
         write_mono_i16_wav(output_path, &audio)?;
         Ok(())
@@ -103,4 +114,10 @@ fn default_string(value: Option<&str>, fallback: &str) -> String {
         Some(value) if !value.is_empty() && value != "auto" => value.into(),
         _ => fallback.into(),
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct KokoroKey {
+    voice: String,
+    language: String,
 }
