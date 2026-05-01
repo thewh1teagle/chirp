@@ -136,7 +136,7 @@ fn ensure_runner(app: &tauri::AppHandle, state: &State<'_, RunnerState>) -> Resu
             analytics::track_error(
                 app,
                 analytics::events::ERROR_RUNNER_REQUEST_FAILED,
-                format!("Chirp runner exited; recent stderr: {}", stderr.trim()),
+                format!("Chirp server exited; recent stderr: {}", stderr.trim()),
                 serde_json::json!({"operation": "ensure_runner"}),
             );
         }

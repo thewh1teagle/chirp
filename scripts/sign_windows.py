@@ -44,7 +44,7 @@ import httpx
 SIGN_PATTERNS = [
     "chirp.exe",
     "chirp*setup*.exe",
-    "chirp-runner*.exe",
+    "chirp-server*.exe",
 ]
 
 

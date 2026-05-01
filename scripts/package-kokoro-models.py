@@ -27,7 +27,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Package Kokoro runtime model files")
     parser.add_argument("--model", type=Path, default=Path("/tmp/chirp-kokoro-c-assets/kokoro-v1.0.onnx"))
     parser.add_argument("--voices", type=Path, default=Path("/tmp/chirp-kokoro-c-assets/voices-v1.0.bin"))
-    parser.add_argument("--espeak-data", type=Path, default=ROOT / "runtimes/kokoro/build-voices/_deps/espeak_ng-build/espeak-ng-data")
+    parser.add_argument("--espeak-data", type=Path, default=Path("/tmp/chirp-kokoro-c-assets/espeak-ng-data"))
     parser.add_argument("--version", default="kokoro-v1.0")
     parser.add_argument("--out-dir", type=Path, default=ROOT / "dist")
     args = parser.parse_args()

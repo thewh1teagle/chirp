@@ -1,5 +1,11 @@
 [workspace]
-members = ["chirp-desktop/src-tauri"]
+members = [
+    "chirp-desktop/src-tauri",
+    "chirp-server",
+    "crates/ggml-rs-sys",
+    "crates/kokoro-rs",
+    "crates/qwentts-rs",
+]
 resolver = "2"
 
 # https://v1.tauri.app/v1/guides/building/app-size/#rust-build-time-optimizations

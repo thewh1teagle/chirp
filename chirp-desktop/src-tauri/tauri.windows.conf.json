@@ -1,6 +1,6 @@
 {
   "bundle": {
-    "externalBin": ["binaries/chirp-runner", "binaries/chirp-kokoro-worker"],
+    "externalBin": ["binaries/chirp-server"],
     "windows": {
       "signCommand": {
         "cmd": "uv.exe",

@@ -113,7 +113,7 @@ monthly signing limit.
 
 - `chirp.exe` (main app)
 - `chirp*setup*.exe` (NSIS installer)
-- `chirp-runner*.exe` (bundled runner sidecar)
+- `chirp-server*.exe` (bundled server sidecar)
 
 ### What gets skipped
 

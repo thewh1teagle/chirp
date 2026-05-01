@@ -1,0 +1,116 @@
+name: release chirp-server
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag (for example: chirp-server-v0.1.0)"
+        required: true
+        type: string
+  push:
+    tags:
+      - "chirp-server-v*"
+
+permissions:
+  contents: write
+
+env:
+  VERSION: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: chirp-server ${{ env.VERSION }}
+          body: |
+            chirp-server sidecar release.
+          generate_release_notes: true
+
+  build-and-upload:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            platform: linux-x64
+            target: x86_64-unknown-linux-gnu
+            binary: chirp-server
+            archive_ext: tar.gz
+          - runner: ubuntu-24.04-arm
+            platform: linux-arm64
+            target: aarch64-unknown-linux-gnu
+            binary: chirp-server
+            archive_ext: tar.gz
+          - runner: macos-14
+            platform: darwin-arm64
+            target: aarch64-apple-darwin
+            binary: chirp-server
+            archive_ext: tar.gz
+          - runner: windows-latest
+            platform: windows-x64
+            target: x86_64-pc-windows-msvc
+            binary: chirp-server.exe
+            archive_ext: zip
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+
+      - name: Install Vulkan deps (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libvulkan-dev
+
+      - name: Install Vulkan deps (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: mingw-w64-ucrt-x86_64-vulkan-devel mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
+
+      - name: Add UCRT64 to PATH
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: echo "$env:RUNNER_TEMP\msys64\ucrt64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+      - name: Build chirp server
+        shell: bash
+        run: |
+          cargo build -p chirp-server --release --bin chirp-server --target "${{ matrix.target }}"
+          mkdir -p "dist/chirp-server-${{ matrix.platform }}"
+          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" "dist/chirp-server-${{ matrix.platform }}/${{ matrix.binary }}"
+
+      - name: Package chirp server
+        shell: bash
+        run: |
+          uv run python scripts/package-server.py \
+            --binary "dist/chirp-server-${{ matrix.platform }}/${{ matrix.binary }}" \
+            --out "dist/chirp-server-${{ matrix.platform }}.${{ matrix.archive_ext }}" \
+            --platform "${{ matrix.platform }}" \
+            --version "${VERSION}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: chirp-server-${{ matrix.platform }}
+          path: dist/chirp-server-${{ matrix.platform }}.${{ matrix.archive_ext }}
+          if-no-files-found: error
+
+      - name: Upload release asset
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$env:VERSION" "dist/chirp-server-${{ matrix.platform }}.${{ matrix.archive_ext }}" --clobber

@@ -39,14 +39,14 @@ pub fn resolve_runner_binary(app: &tauri::AppHandle) -> Result<PathBuf, String> 
         return Ok(path);
     }
 
-    Err("Chirp runner sidecar not found".to_string())
+    Err("Chirp server sidecar not found".to_string())
 }
 
 fn runner_binary_name() -> &'static str {
     if cfg!(target_os = "windows") {
-        "chirp-runner.exe"
+        "chirp-server.exe"
     } else {
-        "chirp-runner"
+        "chirp-server"
     }
 }
 

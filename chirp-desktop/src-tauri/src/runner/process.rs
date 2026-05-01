@@ -53,7 +53,7 @@ impl RunnerProcess {
 
         let mut child = cmd.spawn().map_err(|err| {
             format!(
-                "failed to spawn Chirp runner at {}: {err}",
+                "failed to spawn Chirp server at {}: {err}",
                 binary_path.display()
             )
         })?;
@@ -62,7 +62,7 @@ impl RunnerProcess {
         let stdout = child
             .stdout
             .take()
-            .ok_or_else(|| "failed to capture Chirp runner stdout".to_string())?;
+            .ok_or_else(|| "failed to capture Chirp server stdout".to_string())?;
         let mut reader = std::io::BufReader::new(stdout);
         let mut line = String::new();
 
@@ -90,7 +90,7 @@ impl RunnerProcess {
         };
         if signal.status != "ready" {
             kill_child(&mut child);
-            return Err(format!("unexpected Chirp runner status: {}", signal.status));
+            return Err(format!("unexpected Chirp server status: {}", signal.status));
         }
 
         let client = match reqwest::Client::builder().no_proxy().build() {

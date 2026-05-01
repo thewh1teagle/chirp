@@ -77,10 +77,8 @@ jobs:
         run: pnpm install
         working-directory: chirp-desktop
 
-      - name: Download runner sidecar
+      - name: Build server sidecar
         run: uv run scripts/pre_build.py --target ${{ matrix.target }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Tauri release
         if: runner.os != 'macOS' || !inputs.sign-macos

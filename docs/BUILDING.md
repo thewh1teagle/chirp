@@ -1,94 +1,92 @@
 # Building
 
-Build the native C/C++ runtime first:
+Chirp is built from the Rust workspace and the Tauri desktop app. The desktop bundles a Rust sidecar named `chirp-server`.
+
+## Server
+
+Build the local HTTP server:
 
 ```console
-cmake -S runtimes/qwen -B runtimes/qwen/build
-cmake --build runtimes/qwen/build -j
+cargo build -p chirp-server --release --bin chirp-server
 ```
 
-Or use the packaging script:
+For a specific Tauri sidecar target:
 
 ```console
-uv run python scripts/build-libs.py --backend cpu
-uv run python scripts/package-libs.py --backend cpu --platform linux-arm64 --archive
+uv run scripts/pre_build.py --target aarch64-apple-darwin
 ```
 
-Release builds use accelerated backends by default: `metal` on macOS and
-`vulkan` on Linux/Windows.
+That command builds `chirp-server` with Cargo and copies the platform-suffixed binary into:
 
-Prepare local GGUF models under the ignored `models/` directory:
-
-```console
-uv run hf download Qwen/Qwen3-TTS-12Hz-0.6B-Base \
-  --local-dir models/Qwen3-TTS-12Hz-0.6B-Base
-
-uv run --project runtimes/qwen/scripts python runtimes/qwen/scripts/convert_model_to_gguf.py \
-  --input models/Qwen3-TTS-12Hz-0.6B-Base \
-  --output models/qwen3-tts-0.6b-q4_k.gguf \
-  --type q4_k
-
-uv run --project runtimes/qwen/scripts python runtimes/qwen/scripts/convert_codec_to_gguf.py \
-  --input models/Qwen3-TTS-12Hz-0.6B-Base/speech_tokenizer \
-  --output models/qwen3-tts-tokenizer-f16.gguf \
-  --type f16
+```text
+chirp-desktop/src-tauri/binaries/
 ```
 
-Or download packaged GGUF model bundles from a model release:
+## Desktop
+
+Install frontend dependencies:
 
 ```console
-gh release download chirp-models-v0.1.3 \
-  --pattern 'chirp-models-q5_0.tar.gz' \
-  --dir dist
-
-mkdir -p models
-tar -xzf dist/chirp-models-q5_0.tar.gz -C models
+cd chirp-desktop
+pnpm install
 ```
 
-Build the Go runner:
+Run the app in development:
 
 ```console
-cd chirp-runner
-go build ./cmd/chirp
+pnpm tauri dev
 ```
 
-The Go runner links to local `runtimes/qwen/build` during development. It also
-checks `chirp-runner/third_party/chirp-c` first, which is where prebuilt release
-libraries are downloaded.
-
-Download prebuilt native libraries from a GitHub release:
+Build a package:
 
 ```console
-uv run python scripts/download-libs.py --tag chirp-c-v0.3.1 --backend vulkan
+pnpm tauri build
 ```
 
-Native library releases still use `chirp-c-v*` tags for compatibility. The release workflow packages
-Linux, macOS, and Windows Qwen runtime archives and uploads them as release
-assets.
+## Models
 
-Runner releases use `chirp-runner-v*` tags. The runner release workflow
-downloads a pinned `runtimes/qwen` release, builds the Go `cmd/chirp` binary with
-cgo enabled, and uploads platform archives:
+Packaged model releases use `chirp-models-v*` tags. The Qwen bundle layout is:
 
-```console
-git tag chirp-runner-v0.2.0
-git push origin chirp-runner-v0.2.0
+```text
+chirp-models-q5_0/
+  qwen3-tts-model.gguf
+  qwen3-tts-codec.gguf
+  metadata.json
 ```
 
-Manual runner releases can choose the native library version:
+Kokoro bundles contain:
+
+```text
+chirp-kokoro-models-kokoro-v1.0/
+  kokoro-v1.0.onnx
+  voices-v1.0.bin
+  espeak-ng-data/
+  manifest.json
+```
+
+## Releases
+
+Server sidecar releases use `chirp-server-v*` tags:
 
 ```console
-gh workflow run release-chirp-runner.yml \
+git tag chirp-server-v0.1.0
+git push origin chirp-server-v0.1.0
+```
+
+Manual release workflow:
+
+```console
+gh workflow run release-chirp-server.yml \
   --ref main \
-  -f version=chirp-runner-v0.2.0 \
-  -f chirp_c_tag=chirp-c-v0.3.1
+  -f version=chirp-server-v0.1.0
 ```
 
-Run checks:
+## Checks
 
 ```console
-uv run --project runtimes/qwen/scripts python -c "import gguf, numpy, torch, safetensors, tqdm"
-
-cd chirp-runner
-go test ./...
+cargo test --workspace
+cargo build -p chirp-server --release --bin chirp-server
+cd chirp-desktop
+pnpm build
+pnpm tauri build --debug
 ```

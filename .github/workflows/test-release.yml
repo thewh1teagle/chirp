@@ -3,10 +3,10 @@ name: test release
 on:
   workflow_dispatch:
     inputs:
-      runner_tag:
-        description: "Runner release tag to test"
+      server_tag:
+        description: "Server release tag to test"
         required: true
-        default: "chirp-runner-v0.2.13"
+        default: "chirp-server-v0.1.0"
         type: string
       kokoro_bundle_url:
         description: "Kokoro model bundle URL"
@@ -25,27 +25,27 @@ jobs:
         include:
           - runner: ubuntu-24.04
             platform: linux-x64
-            archive: chirp-runner-linux-x64.tar.gz
-            binary: chirp
+            archive: chirp-server-linux-x64.tar.gz
+            binary: chirp-server
             shell: bash
           - runner: ubuntu-24.04-arm
             platform: linux-arm64
-            archive: chirp-runner-linux-arm64.tar.gz
-            binary: chirp
+            archive: chirp-server-linux-arm64.tar.gz
+            binary: chirp-server
             shell: bash
           - runner: macos-14
             platform: darwin-arm64
-            archive: chirp-runner-darwin-arm64.tar.gz
-            binary: chirp
+            archive: chirp-server-darwin-arm64.tar.gz
+            binary: chirp-server
             shell: bash
           - runner: windows-latest
             platform: windows-x64
-            archive: chirp-runner-windows-x64.zip
-            binary: chirp.exe
+            archive: chirp-server-windows-x64.zip
+            binary: chirp-server.exe
             shell: pwsh
     runs-on: ${{ matrix.runner }}
     env:
-      RUNNER_TAG: ${{ github.event.inputs.runner_tag }}
+      SERVER_TAG: ${{ github.event.inputs.server_tag }}
       KOKORO_BUNDLE_URL: ${{ github.event.inputs.kokoro_bundle_url }}
       ARCHIVE: ${{ matrix.archive }}
       BINARY: ${{ matrix.binary }}
@@ -57,7 +57,7 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq libvulkan1 curl
 
-      - name: Download runner and Kokoro bundle (Unix)
+      - name: Download server and Kokoro bundle (Unix)
         if: runner.os != 'Windows'
         shell: bash
         env:
@@ -65,18 +65,15 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p dist models
-          gh release download "${RUNNER_TAG}" --pattern "${ARCHIVE}" --dir dist
+          gh release download "${SERVER_TAG}" --pattern "${ARCHIVE}" --dir dist
           curl -L --retry 3 --retry-delay 5 -o dist/kokoro.tar.gz "${KOKORO_BUNDLE_URL}"
           tar -xzf "dist/${ARCHIVE}" -C dist
           tar -xzf dist/kokoro.tar.gz -C models
-          chmod +x "dist/chirp-runner-${{ matrix.platform }}/${BINARY}"
-          if [ -f "dist/chirp-runner-${{ matrix.platform }}/chirp-kokoro-worker" ]; then
-            chmod +x "dist/chirp-runner-${{ matrix.platform }}/chirp-kokoro-worker"
-          fi
+          chmod +x "dist/chirp-server-${{ matrix.platform }}/${BINARY}"
           find dist -maxdepth 2 -type f -print
           find models -maxdepth 3 -type f -print
 
-      - name: Download runner and Kokoro bundle (Windows)
+      - name: Download server and Kokoro bundle (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         env:
@@ -84,7 +81,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           New-Item -ItemType Directory -Force -Path models | Out-Null
-          gh release download "$env:RUNNER_TAG" --pattern "$env:ARCHIVE" --dir dist
+          gh release download "$env:SERVER_TAG" --pattern "$env:ARCHIVE" --dir dist
           curl.exe -L --retry 3 --retry-delay 5 -o dist\kokoro.tar.gz "$env:KOKORO_BUNDLE_URL"
           Expand-Archive -Path "dist\$env:ARCHIVE" -DestinationPath dist -Force
           tar -xzf dist\kokoro.tar.gz -C models
@@ -96,10 +93,10 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          RUNNER="dist/chirp-runner-${{ matrix.platform }}/${BINARY}"
+          RUNNER="dist/chirp-server-${{ matrix.platform }}/${BINARY}"
           MODEL_DIR="models/chirp-kokoro-models-kokoro-v1.0"
           "${RUNNER}" --version
-          "${RUNNER}" serve --host 127.0.0.1 --port 51972 > runner.log 2>&1 &
+          "${RUNNER}" serve --host 127.0.0.1 --port 51972 > server.log 2>&1 &
           RUNNER_PID=$!
           trap 'kill ${RUNNER_PID} || true' EXIT
           for _ in $(seq 1 60); do
@@ -119,10 +116,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $runner = "dist\chirp-runner-${{ matrix.platform }}\$env:BINARY"
+          $runner = "dist\chirp-server-${{ matrix.platform }}\$env:BINARY"
           $modelDir = "models\chirp-kokoro-models-kokoro-v1.0"
           & $runner --version
-          $proc = Start-Process -FilePath $runner -ArgumentList @("serve", "--host", "127.0.0.1", "--port", "51972") -RedirectStandardOutput runner.log -RedirectStandardError runner.err -PassThru
+          $proc = Start-Process -FilePath $runner -ArgumentList @("serve", "--host", "127.0.0.1", "--port", "51972") -RedirectStandardOutput server.log -RedirectStandardError server.err -PassThru
           try {
             for ($i = 0; $i -lt 60; $i++) {
               try {
@@ -156,6 +153,6 @@ jobs:
           name: kokoro-smoke-${{ matrix.platform }}
           path: |
             out.wav
-            runner.log
-            runner.err
+            server.log
+            server.err
           if-no-files-found: ignore

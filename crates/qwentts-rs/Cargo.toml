@@ -1,0 +1,23 @@
+[package]
+name = "qwentts-rs"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+metal = ["ggml-rs-sys/metal"]
+vulkan = ["ggml-rs-sys/vulkan"]
+
+[dependencies]
+ggml-rs-sys = { path = "../ggml-rs-sys" }
+half = "2.7.1"
+hound = "3.5.1"
+rand = "0.9.4"
+rubato = "0.16.2"
+rustfft = "6.4.1"
+thiserror = "2.0.18"
+tokenizers = "0.21.4"
+
+[dev-dependencies]
+clap = { version = "4.5.53", features = ["derive"] }
+tempfile = "3.27.0"
