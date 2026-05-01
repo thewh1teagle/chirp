@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use ggml_rs_sys as ffi;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("path contains an interior nul byte: {0:?}")]
@@ -19,7 +21,10 @@ pub enum Error {
     #[error("missing tensor: {0}")]
     MissingTensor(String),
     #[error("unsupported tensor type {tensor_type} for {name}")]
-    UnsupportedTensorType { name: String, tensor_type: u32 },
+    UnsupportedTensorType {
+        name: String,
+        tensor_type: ffi::ggml_type,
+    },
     #[error("model config error: {0}")]
     ModelConfig(String),
     #[error("ggml error: {0}")]
