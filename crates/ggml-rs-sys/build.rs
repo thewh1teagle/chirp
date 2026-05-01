@@ -95,7 +95,8 @@ fn link_built_libs(dst: &Path) {
     for dir in search_dirs.into_iter().filter(|dir| dir.exists()) {
         println!("cargo:rustc-link-search=native={}", dir.display());
     }
-    link_common_libs();
+    link_ggml_libs(dst);
+    link_platform_libs();
 }
 
 fn link_from_dir(lib_dir: &Path) {
@@ -110,7 +111,8 @@ fn link_from_dir(lib_dir: &Path) {
             }
         }
     }
-    link_common_libs();
+    link_ggml_libs(lib_dir);
+    link_platform_libs();
 }
 
 fn ggml_static_lib_files() -> &'static [&'static str] {
@@ -121,17 +123,42 @@ fn ggml_static_lib_files() -> &'static [&'static str] {
         "libggml-blas.a",
         "libggml-metal.a",
         "libggml-vulkan.a",
+        "ggml.lib",
+        "ggml-base.lib",
+        "ggml-cpu.lib",
+        "ggml-blas.lib",
+        "ggml-metal.lib",
+        "ggml-vulkan.lib",
     ]
 }
 
-fn link_common_libs() {
-    println!("cargo:rustc-link-lib=static=ggml");
-    println!("cargo:rustc-link-lib=static=ggml-base");
-    println!("cargo:rustc-link-lib=static=ggml-cpu");
-    println!("cargo:rustc-link-lib=static=ggml-blas");
+fn link_ggml_libs(root: &Path) {
+    for lib in [
+        "ggml",
+        "ggml-base",
+        "ggml-cpu",
+        "ggml-blas",
+        "ggml-metal",
+        "ggml-vulkan",
+    ] {
+        if has_static_lib(root, lib) {
+            println!("cargo:rustc-link-lib=static={lib}");
+        }
+    }
+}
+
+fn has_static_lib(root: &Path, lib: &str) -> bool {
+    find_dirs(root, &|dir| {
+        dir.join(format!("lib{lib}.a")).exists() || dir.join(format!("{lib}.lib")).exists()
+    })
+    .into_iter()
+    .next()
+    .is_some()
+}
+
+fn link_platform_libs() {
     if cfg!(target_os = "macos") {
         if metal_enabled() == "ON" {
-            println!("cargo:rustc-link-lib=static=ggml-metal");
             println!("cargo:rustc-link-lib=framework=Foundation");
             println!("cargo:rustc-link-lib=framework=Metal");
             println!("cargo:rustc-link-lib=framework=MetalKit");
@@ -146,6 +173,8 @@ fn link_common_libs() {
         println!("cargo:rustc-link-lib=dylib=pthread");
         println!("cargo:rustc-link-lib=dylib=m");
         println!("cargo:rustc-link-lib=dylib=dl");
+    } else if cfg!(target_os = "windows") && vulkan_enabled() == "ON" {
+        println!("cargo:rustc-link-lib=vulkan-1");
     }
 }
 

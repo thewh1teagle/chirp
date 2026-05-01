@@ -76,15 +76,17 @@ jobs:
 
       - name: Install Vulkan deps (Windows)
         if: runner.os == 'Windows'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: UCRT64
-          install: mingw-w64-ucrt-x86_64-vulkan-devel mingw-w64-ucrt-x86_64-shaderc mingw-w64-ucrt-x86_64-spirv-headers mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-ninja
-
-      - name: Add UCRT64 to PATH
-        if: runner.os == 'Windows'
         shell: pwsh
-        run: echo "$env:RUNNER_TEMP\msys64\ucrt64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+        run: |
+          choco install vulkan-sdk -y --no-progress
+          $sdk = Get-ChildItem "${env:ProgramFiles}\VulkanSDK" -Directory |
+            Sort-Object Name -Descending |
+            Select-Object -First 1
+          if (-not $sdk) {
+            throw "Vulkan SDK was not installed"
+          }
+          echo "VULKAN_SDK=$($sdk.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "$($sdk.FullName)\Bin" | Out-File -FilePath $env:GITHUB_PATH -Append
 
       - name: Build chirp server
         shell: bash
