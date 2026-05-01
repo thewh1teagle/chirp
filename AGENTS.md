@@ -35,6 +35,19 @@ uv run plans/<name>/<name>_001.py
 
 Custom skills are located in the `.skills/` folder.
 
+## Engineering Principles
+
+- Use existing, well-maintained libraries for standard formats, protocols, and domain-specific behavior by default. Reach for custom implementations only when the available libraries do not fit the requirements or would make the solution meaningfully worse.
+- Favor long-term architectural clarity over preserving existing code. Large rewrites are acceptable when they reduce system complexity.
+
+## Delivery Standards
+
+Deliver the real requested behavior, not scaffolding, placeholders, mocks, probe outputs, or partial validation. If the full request is too large, say so before editing and propose a smaller real slice.
+
+- For large tasks, split into real validated slices and keep going without asking.
+- Do not stop at plans, wrappers, mocks, placeholders, or “too large” explanations.
+- Reference implementations are allowed only for parity tests, not production shortcuts.
+
 ## Execution Mindset
 
 Think in agent mode, not human mode.
