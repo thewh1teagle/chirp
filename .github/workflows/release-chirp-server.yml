@@ -72,7 +72,7 @@ jobs:
 
       - name: Install Vulkan deps (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq libvulkan-dev glslang-tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq libvulkan-dev glslc
 
       - name: Install Vulkan deps (Windows)
         if: runner.os == 'Windows'
